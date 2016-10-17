@@ -6,8 +6,6 @@
 <html lang="en">
 
 <body>
-
-<h1>Welcome</h1>
         <c:url value="/resources/text.txt" var="url"/>
         <spring:url value="/resources/text.txt" htmlEscape="true" var="springUrl" />
         Spring URL: ${springUrl} at ${time}
