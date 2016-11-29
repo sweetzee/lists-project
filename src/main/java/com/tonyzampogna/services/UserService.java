@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 /**
- * This class contains the methods for operating on Users.
+ * This class contains the methods for operating on UserModels.
  */
 @Service
 public class UserService {
@@ -41,7 +41,7 @@ public class UserService {
 		// Create the PreparedStatement if it doesn't exist.
 		if (PS_CREATE_USER == null) {
 			PS_CREATE_USER = session.prepare(
-				"INSERT INTO user (user_id, username, password, first_name, last_name, email_address, create_date, create_user, update_date, update_user) " +
+				"INSERT INTO users (user_id, username, password, first_name, last_name, email_address, create_date, create_user, update_date, update_user) " +
 				"VALUES (:userId, :username, :password, :firstName, :lastName, :emailAddress, :createDate, :createUser, :updateDate, :updateUser)");
 		}
 
@@ -106,9 +106,9 @@ public class UserService {
 		Session session = listsDatabaseSessionFactory.getSession();
 
 		// Create the PreparedStatement if it doesn't exist.
-		if (PS_UPDATE_USER_BY_USERNAME == null) {
-			PS_UPDATE_USER_BY_USERNAME = session.prepare(
-				"UPDATE user SET " +
+		if (PS_UPDATE_USER_BY_USERID == null) {
+			PS_UPDATE_USER_BY_USERID = session.prepare(
+				"UPDATE users SET " +
 				"user_id = :userId " +
 				"username = :username " +
 				"password = :password " +
@@ -122,7 +122,7 @@ public class UserService {
 				"WHERE user_id = :userId");
 		}
 
-		BoundStatement boundStatement = PS_UPDATE_USER_BY_USERNAME.bind();
+		BoundStatement boundStatement = PS_UPDATE_USER_BY_USERID.bind();
 		updateBoundStatement(boundStatement, userModel);
 
 		session.execute(boundStatement);
@@ -135,7 +135,7 @@ public class UserService {
 		// Create the PreparedStatement if it doesn't exist.
 		if (PS_UPDATE_USER_BY_USERNAME == null) {
 			PS_UPDATE_USER_BY_USERNAME = session.prepare(
-				"UPDATE user SET " +
+				"UPDATE users SET " +
 				"user_id = :userId " +
 				"username = :username " +
 				"password = :password " +
@@ -162,7 +162,7 @@ public class UserService {
 		// Create the PreparedStatement if it doesn't exist.
 		if (PS_DELETE_USER_BY_USERID == null) {
 			PS_DELETE_USER_BY_USERID = session.prepare(
-				"DELETE FROM user WHERE user_id = :userId");
+				"DELETE FROM users WHERE user_id = :userId");
 		}
 
 		BoundStatement boundStatement = PS_DELETE_USER_BY_USERID.bind();
@@ -178,7 +178,7 @@ public class UserService {
 		// Create the PreparedStatement if it doesn't exist.
 		if (PS_DELETE_USER_BY_USERNAME == null) {
 			PS_DELETE_USER_BY_USERNAME = session.prepare(
-				"DELETE FROM user WHERE username = :username");
+				"DELETE FROM users WHERE username = :username");
 		}
 
 		BoundStatement boundStatement = PS_DELETE_USER_BY_USERNAME.bind();
