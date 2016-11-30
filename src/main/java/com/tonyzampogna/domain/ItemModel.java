@@ -8,6 +8,7 @@ import java.util.UUID;
  */
 public class ItemModel {
 	private UUID itemId = null;
+	private UUID listId = null;
 	private String itemName = null;
 	private Date createDate = null;
 	private UUID createUser = null;
@@ -21,6 +22,14 @@ public class ItemModel {
 
 	public void setItemId(UUID itemId) {
 		this.itemId = itemId;
+	}
+
+	public UUID getListId() {
+		return listId;
+	}
+
+	public void setListId(UUID listId) {
+		this.listId = listId;
 	}
 
 	public String getItemName() {
