@@ -37,7 +37,7 @@ public class ListsDatabaseSessionFactory {
 		if (ListsDatabaseSessionFactory.SESSION == null) {
 			synchronized(Session.class) {
 				try {
-					String cassandraNodes = listsDatabaseProperties.getCassandraNodes();
+					String cassandraNodes = listsDatabaseProperties.getNodes();
 					String keyspace = listsDatabaseProperties.getKeyspaceName();
 					String username = listsDatabaseProperties.getUsername();
 					String password = listsDatabaseProperties.getPassword();

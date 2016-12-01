@@ -1,32 +1,45 @@
 package com.tonyzampogna.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
  * Properties file for Cassandra
  */
-@ConfigurationProperties("cassandra.properties")
 @Component
 public class ListsDatabaseProperties {
 
-	private String cassandraNodes = null;
+	@Value("${lists.database.nodes}")
+	private String nodes = null;
+
+	@Value("${lists.database.keyspace}")
 	private String keyspaceName = null;
+
+	@Value("${lists.database.username}")
 	private String username = null;
+
+	@Value("${lists.database.password}")
 	private String password = null;
 
+	@Value("${lists.database.connections-per-host}")
 	private Integer connectionsPerHost = null;
+
+	@Value("${lists.database.core-connections-per-host}")
 	private Integer coreConnectionsPerHost = null;
+
+	@Value("${lists.database.max-connections-per-host}")
 	private Integer maxConnectionsPerHost = null;
+
+	@Value("${lists.database.max-requests-per-connection}")
 	private Integer maxRequestsPerConnection = null;
 
 
-	public String getCassandraNodes() {
-		return cassandraNodes;
+	public String getNodes() {
+		return nodes;
 	}
 
 	public void setCassandraNodes(String cassandraNodes) {
-		this.cassandraNodes = cassandraNodes;
+		this.nodes = nodes;
 	}
 
 	public String getKeyspaceName() {

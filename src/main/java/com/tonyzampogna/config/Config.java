@@ -2,6 +2,7 @@ package com.tonyzampogna.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.web.servlet.config.annotation.DefaultServletHandlerConfigurer;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
@@ -10,6 +11,8 @@ import org.springframework.web.servlet.view.JstlView;
 
 @EnableWebMvc
 @Configuration
+// Load properties in the default location (/local). Use the ENV property if it's present.
+@PropertySource("classpath:/${ENV:local}/lists-database.properties")
 public class Config extends WebMvcConfigurerAdapter {
 
 	@Override
