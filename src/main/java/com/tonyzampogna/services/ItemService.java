@@ -17,19 +17,19 @@ import java.util.UUID;
 public class ItemService {
 	private static final Logger log = LoggerFactory.getLogger(ItemService.class);
 
+	// Prepared Statements
+	private static PreparedStatement PS_CREATE_ITEM = null;
+	private static PreparedStatement PS_GET_ITEM_BY_ITEMID = null;
+	private static PreparedStatement PS_GET_ITEMS_BY_LISTID = null;
+	private static PreparedStatement PS_UPDATE_ITEM_BY_ITEMID = null;
+	private static PreparedStatement PS_DELETE_ITEM_BY_ITEMID = null;
+
 	@Autowired
 	private ListsDatabaseSessionFactory listsDatabaseSessionFactory;
 
-	// Bound Statements
-	private PreparedStatement PS_CREATE_ITEM = null;
-	private PreparedStatement PS_GET_ITEM_BY_ITEMID = null;
-	private PreparedStatement PS_GET_ITEMS_BY_LISTID = null;
-	private PreparedStatement PS_UPDATE_ITEM_BY_ITEMID = null;
-	private PreparedStatement PS_DELETE_ITEM_BY_ITEMID = null;
-
 
 	/////////////////////////////////////////////////
-	// Service Methods
+	// Create Methods
 	/////////////////////////////////////////////////
 
 	public void createItem(ItemModel itemModel) {
@@ -39,8 +39,8 @@ public class ItemService {
 		// Create the PreparedStatement if it doesn't exist.
 		if (PS_CREATE_ITEM == null) {
 			PS_CREATE_ITEM = session.prepare(
-				"INSERT INTO items (item_id, list_id, item_name, create_date, create_user, update_date, update_user) " +
-				"VALUES (:itemId, :listId, :itemName, :createDate, :createUser, :updateDate, :updateUser)");
+				"INSERT INTO items (item_id, list_id, item_name, create_user, create_date, update_user, update_date) " +
+				"VALUES (:itemId, :listId, :itemName, :createUser, :createDate, :updateUser, :updateDate)");
 		}
 
 		BoundStatement boundStatement = PS_CREATE_ITEM.bind();
@@ -48,6 +48,11 @@ public class ItemService {
 
 		session.execute(boundStatement);
 	}
+
+
+	/////////////////////////////////////////////////
+	// Read Methods
+	/////////////////////////////////////////////////
 
 	public ItemModel getItemById(UUID itemId) {
 		ItemModel itemModel = null;
@@ -58,7 +63,7 @@ public class ItemService {
 		// Create the PreparedStatement if it doesn't exist.
 		if (PS_GET_ITEM_BY_ITEMID == null) {
 			PS_GET_ITEM_BY_ITEMID = session.prepare(
-				"SELECT item_id, list_id, item_name, create_date, create_user, update_date, update_user " +
+				"SELECT item_id, list_id, item_name, create_user, create_date, update_user, update_date " +
 				"FROM items WHERE item_id = :itemId");
 		}
 
@@ -83,7 +88,7 @@ public class ItemService {
 		// Create the PreparedStatement if it doesn't exist.
 		if (PS_GET_ITEMS_BY_LISTID == null) {
 			PS_GET_ITEMS_BY_LISTID = session.prepare(
-				"SELECT item_id, list_id, item_name, create_date, create_user, update_date, update_user " +
+				"SELECT item_id, list_id, item_name, create_user, create_date, update_user, update_date " +
 				"FROM items WHERE list_id = :listId"
 			);
 		}
@@ -107,6 +112,11 @@ public class ItemService {
 		return itemModelList;
 	}
 
+
+	/////////////////////////////////////////////////
+	// Update Methods
+	/////////////////////////////////////////////////
+
 	public void updateItemByItemId(ItemModel itemModel) {
 		List<ItemModel> itemModelList = new ArrayList<ItemModel>();
 		itemModelList.add(itemModel);
@@ -121,13 +131,13 @@ public class ItemService {
 		if (PS_UPDATE_ITEM_BY_ITEMID == null) {
 			PS_UPDATE_ITEM_BY_ITEMID = session.prepare(
 				"UPDATE items SET " +
-				"item_id = :itemId " +
-				"list_id = :listId " +
-				"item_name = :listName " +
-				"create_date = :createDate " +
-				"create_user = :createUser " +
+				"item_id = :itemId, " +
+				"list_id = :listId, " +
+				"item_name = :listName, " +
+				"create_user = :createUser, " +
+				"create_date = :createDate, " +
+				"update_user = :updateUser, " +
 				"update_date = :updateDate " +
-				"update_user = :updateUser " +
 				"WHERE list_id = :listId");
 		}
 
@@ -141,6 +151,11 @@ public class ItemService {
 
 		session.execute(batchStatement);
 	}
+
+
+	/////////////////////////////////////////////////
+	// Delete Methods
+	/////////////////////////////////////////////////
 
 	public void deleteItemByItemId(UUID itemId) {
 		List<ItemModel> itemModelList = new ArrayList<ItemModel>();
@@ -180,10 +195,10 @@ public class ItemService {
 		boundStatement.setUUID("itemId", itemModel.getItemId());
 		boundStatement.setUUID("listId", itemModel.getListId());
 		boundStatement.setString("itemName", itemModel.getItemName());
-		boundStatement.setTimestamp("createDate", itemModel.getCreateDate());
 		boundStatement.setUUID("createUser", itemModel.getCreateUser());
-		boundStatement.setTimestamp("updateDate", itemModel.getUpdateDate());
+		boundStatement.setTimestamp("createDate", itemModel.getCreateDate());
 		boundStatement.setUUID("updateUser", itemModel.getUpdateUser());
+		boundStatement.setTimestamp("updateDate", itemModel.getUpdateDate());
 	}
 
 	private ItemModel transformRowToItem(Row row) {
@@ -195,10 +210,10 @@ public class ItemService {
 		itemModel.setItemId(row.getUUID("item_id"));
 		itemModel.setListId(row.getUUID("user_id"));
 		itemModel.setItemName(row.getString("item_name"));
-		itemModel.setCreateDate(row.getTimestamp("create_date"));
 		itemModel.setCreateUser(row.getUUID("create_user"));
-		itemModel.setUpdateDate(row.getTimestamp("update_date"));
+		itemModel.setCreateDate(row.getTimestamp("create_date"));
 		itemModel.setUpdateUser(row.getUUID("update_user"));
+		itemModel.setUpdateDate(row.getTimestamp("update_date"));
 
 		return itemModel;
 	}

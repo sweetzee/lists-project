@@ -13,10 +13,10 @@ public class UserModel {
 	private String firstName = null;
 	private String lastName = null;
 	private String emailAddress = null;
-	private Date createDate = null;
 	private UUID createUser = null;
-	private Date updateDate = null;
+	private Date createDate = null;
 	private UUID updateUser = null;
+	private Date updateDate = null;
 
 
 	public UUID getUserId() {
@@ -67,14 +67,6 @@ public class UserModel {
 		this.emailAddress = emailAddress;
 	}
 
-	public Date getCreateDate() {
-		return createDate;
-	}
-
-	public void setCreateDate(Date createDate) {
-		this.createDate = createDate;
-	}
-
 	public UUID getCreateUser() {
 		return createUser;
 	}
@@ -83,12 +75,12 @@ public class UserModel {
 		this.createUser = createUser;
 	}
 
-	public Date getUpdateDate() {
-		return updateDate;
+	public Date getCreateDate() {
+		return createDate;
 	}
 
-	public void setUpdateDate(Date updateDate) {
-		this.updateDate = updateDate;
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
 	}
 
 	public UUID getUpdateUser() {
@@ -97,6 +89,14 @@ public class UserModel {
 
 	public void setUpdateUser(UUID updateUser) {
 		this.updateUser = updateUser;
+	}
+
+	public Date getUpdateDate() {
+		return updateDate;
+	}
+
+	public void setUpdateDate(Date updateDate) {
+		this.updateDate = updateDate;
 	}
 
 }

@@ -16,21 +16,21 @@ import java.util.UUID;
 public class ListService {
 	private static final Logger log = LoggerFactory.getLogger(ListService.class);
 
+	// Prepared Statements
+	private static PreparedStatement PS_CREATE_LIST = null;
+	private static PreparedStatement PS_CREATE_USER_LIST = null;
+	private static PreparedStatement PS_GET_LIST_BY_LISTID = null;
+	private static PreparedStatement PS_GET_LISTS_BY_USERID = null;
+	private static PreparedStatement PS_GET_LISTS_BY_USERNAME = null;
+	private static PreparedStatement PS_UPDATE_LIST_BY_LISTID = null;
+	private static PreparedStatement PS_DELETE_LIST_BY_LISTID = null;
+
 	@Autowired
 	private ListsDatabaseSessionFactory listsDatabaseSessionFactory;
 
-	// Bound Statements
-	private PreparedStatement PS_CREATE_LIST = null;
-	private PreparedStatement PS_CREATE_USER_LIST = null;
-	private PreparedStatement PS_GET_LIST_BY_LISTID = null;
-	private PreparedStatement PS_GET_LISTS_BY_USERID = null;
-	private PreparedStatement PS_GET_LISTS_BY_USERNAME = null;
-	private PreparedStatement PS_UPDATE_LIST_BY_LISTID = null;
-	private PreparedStatement PS_DELETE_LIST_BY_LISTID = null;
-
 
 	/////////////////////////////////////////////////
-	// Service Methods
+	// Create Methods
 	/////////////////////////////////////////////////
 
 	public void createList(ListModel listModel) {
@@ -40,8 +40,8 @@ public class ListService {
 		// Create the PreparedStatement if it doesn't exist.
 		if (PS_CREATE_LIST == null) {
 			PS_CREATE_LIST = session.prepare(
-				"INSERT INTO lists (list_id, list_name, create_date, create_user, update_date, update_user) " +
-				"VALUES (:listId, :listName, :createDate, :createUser, :updateDate, :updateUser)");
+				"INSERT INTO lists (list_id, list_name, create_user, create_date, update_user, update_date) " +
+				"VALUES (:listId, :listName, :createUser, :createDate, :updateUser, :updateDate)");
 		}
 
 		BoundStatement boundStatement = PS_CREATE_LIST.bind();
@@ -67,8 +67,8 @@ public class ListService {
 		// Create the PreparedStatement if it doesn't exist.
 		if (PS_CREATE_LIST == null) {
 			PS_CREATE_LIST = session.prepare(
-				"INSERT INTO user_lists (list_id, list_name, create_date, create_user, update_date, update_user) " +
-				"VALUES (:listId, :listName, :createDate, :createUser, :updateDate, :updateUser)");
+				"INSERT INTO user_lists (list_id, list_name, create_user, create_date, update_user, update_date) " +
+				"VALUES (:listId, :listName, :createUser, :createDate, :updateUser, :updateDate)");
 		}
 
 		BoundStatement boundStatement2 = PS_CREATE_LIST.bind();
@@ -82,6 +82,11 @@ public class ListService {
 		session.execute(batchStatement);
 	}
 
+
+	/////////////////////////////////////////////////
+	// Read Methods
+	/////////////////////////////////////////////////
+
 	public ListModel getListById(UUID listId) {
 		ListModel listModel = null;
 
@@ -91,7 +96,7 @@ public class ListService {
 		// Create the PreparedStatement if it doesn't exist.
 		if (PS_GET_LIST_BY_LISTID == null) {
 			PS_GET_LIST_BY_LISTID = session.prepare(
-				"SELECT list_id, list_name, create_date, create_user, update_date, update_user " +
+				"SELECT list_id, list_name, create_user, create_date, update_user, update_date " +
 				"FROM lists WHERE list_id = :listId");
 		}
 
@@ -116,7 +121,7 @@ public class ListService {
 		// Create the PreparedStatement if it doesn't exist.
 		if (PS_GET_LISTS_BY_USERID == null) {
 			PS_GET_LISTS_BY_USERID = session.prepare(
-				"SELECT l.list_id, l.list_name, l.create_date, l.create_user, l.update_date, l.update_user " +
+				"SELECT l.list_id, l.list_name, l.create_user, l.create_date, l.update_user, l.update_date " +
 				"FROM lists l, user_lists ul " +
 				"WHERE ul.user_id = :userId " +
 				"AND l.list_id == ul.list_id"
@@ -144,7 +149,7 @@ public class ListService {
 		// Create the PreparedStatement if it doesn't exist.
 		if (PS_GET_LISTS_BY_USERNAME == null) {
 			PS_GET_LISTS_BY_USERNAME = session.prepare(
-				"SELECT l.list_id, l.list_name, l.create_date, l.create_user, l.update_date, l.update_user " +
+				"SELECT l.list_id, l.list_name, l.create_user, l.create_date, l.update_user, l.update_date " +
 				"FROM users u, lists l, user_lists ul " +
 				"WHERE u.username = :username " +
 				"AND u.user_id == ul.user_id " +
@@ -164,6 +169,11 @@ public class ListService {
 		return listModel;
 	}
 
+
+	/////////////////////////////////////////////////
+	// Update Methods
+	/////////////////////////////////////////////////
+
 	public void updateListByListId(ListModel listModel) {
 		// Get the Session.
 		Session session = listsDatabaseSessionFactory.getSession();
@@ -172,12 +182,12 @@ public class ListService {
 		if (PS_UPDATE_LIST_BY_LISTID == null) {
 			PS_UPDATE_LIST_BY_LISTID = session.prepare(
 				"UPDATE lists SET " +
-				"list_id = :listId " +
-				"list_name = :listName " +
-				"create_date = :createDate " +
-				"create_user = :createUser " +
+				"list_id = :listId, " +
+				"list_name = :listName, " +
+				"create_user = :createUser, " +
+				"create_date = :createDate, " +
+				"update_user = :updateUser, " +
 				"update_date = :updateDate " +
-				"update_user = :updateUser " +
 				"WHERE list_id = :listId");
 		}
 
@@ -186,6 +196,11 @@ public class ListService {
 
 		session.execute(boundStatement);
 	}
+
+
+	/////////////////////////////////////////////////
+	// Delete Methods
+	/////////////////////////////////////////////////
 
 	public void deleteListByListId(UUID listId) {
 		// Get the Session.
@@ -211,10 +226,10 @@ public class ListService {
 	private void updateBoundStatement(BoundStatement boundStatement, ListModel listModel) {
 		boundStatement.setUUID("listId", listModel.getListId());
 		boundStatement.setString("listName", listModel.getListName());
-		boundStatement.setTimestamp("createDate", listModel.getCreateDate());
 		boundStatement.setUUID("createUser", listModel.getCreateUser());
-		boundStatement.setTimestamp("updateDate", listModel.getUpdateDate());
+		boundStatement.setTimestamp("createDate", listModel.getCreateDate());
 		boundStatement.setUUID("updateUser", listModel.getUpdateUser());
+		boundStatement.setTimestamp("updateDate", listModel.getUpdateDate());
 	}
 
 	private ListModel transformRowToList(Row row) {
@@ -225,10 +240,10 @@ public class ListService {
 		ListModel listModel = new ListModel();
 		listModel.setListId(row.getUUID("user_id"));
 		listModel.setListName(row.getString("username"));
-		listModel.setCreateDate(row.getTimestamp("create_date"));
 		listModel.setCreateUser(row.getUUID("create_user"));
-		listModel.setUpdateDate(row.getTimestamp("update_date"));
+		listModel.setCreateDate(row.getTimestamp("create_date"));
 		listModel.setUpdateUser(row.getUUID("update_user"));
+		listModel.setUpdateDate(row.getTimestamp("update_date"));
 
 		return listModel;
 	}
