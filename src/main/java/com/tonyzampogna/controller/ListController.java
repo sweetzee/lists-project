@@ -28,7 +28,8 @@ public class ListController extends BaseController {
 	/**
 	 * Create a new list.
 	 *
-	 * It is possible to update or delete a list by ID as well.
+	 * It is possible to update or delete a list by ID as well
+	 * using the action parameter.
 	 */
 	@RequestMapping(
 			value = "/list",

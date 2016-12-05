@@ -26,7 +26,8 @@ public class UserController extends BaseController {
 	/**
 	 * Create a new user.
 	 *
-	 * It is possible to update or delete a user by ID as well.
+	 * It is possible to update or delete a list by ID as well
+	 * using the action parameter.
 	 */
 	@RequestMapping(
 			value = "/user",

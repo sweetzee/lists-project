@@ -1,7 +1,9 @@
 package com.tonyzampogna.controller;
 
+import com.tonyzampogna.domain.ItemModel;
 import com.tonyzampogna.domain.ListModel;
 import com.tonyzampogna.domain.UserModel;
+import com.tonyzampogna.services.ItemService;
 import com.tonyzampogna.services.ListService;
 import com.tonyzampogna.services.UserService;
 import org.slf4j.Logger;
@@ -20,6 +22,7 @@ public abstract class BaseController {
 	@Autowired
 	private UserService userService;
 	private ListService listService;
+	private ItemService itemService;
 
 
 	/////////////////////////////////////////////////
@@ -55,6 +58,15 @@ public abstract class BaseController {
 	 */
 	protected ListModel getListModel(String listId) {
 		return listService.getListById(UUID.fromString(listId));
+	}
+
+	/**
+	 * This function returns the ItemModel from the database.
+	 *
+	 * @Param itemId: Item ID for the list.
+	 */
+	protected ItemModel getItemModel(String itemId) {
+		return itemService.getItemById(UUID.fromString(itemId));
 	}
 
 

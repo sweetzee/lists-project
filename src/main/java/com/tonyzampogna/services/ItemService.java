@@ -36,7 +36,7 @@ public class ItemService {
 	/**
 	 * Create
 	 */
-	public List<ItemModel> createItemsByItemId(List<ItemModel> itemModelList) {
+	public List<ItemModel> createItems(List<ItemModel> itemModelList) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
 		// For each ItemModel...
@@ -143,7 +143,7 @@ public class ItemService {
 	/**
 	 * Update
 	 */
-	public List<ItemModel> updateItemsByItemId(List<ItemModel> itemModelList) {
+	public List<ItemModel> updateItems(List<ItemModel> itemModelList) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
 		// For each ItemModel...
@@ -182,7 +182,7 @@ public class ItemService {
 	/**
 	 * Delete
 	 */
-	public List<ItemModel> deleteItemsByItemId(List<ItemModel> itemModelList) {
+	public List<ItemModel> deleteItems(List<ItemModel> itemModelList) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
 		// For each ItemModel...
@@ -359,7 +359,7 @@ public class ItemService {
 
 		ItemModel itemModel = new ItemModel();
 		itemModel.setItemId(row.getUUID("item_id"));
-		itemModel.setListId(row.getUUID("user_id"));
+		itemModel.setListId(row.getUUID("list_id"));
 		itemModel.setItemName(row.getString("item_name"));
 		itemModel.setCreateUser(row.getUUID("create_user"));
 		itemModel.setCreateDate(row.getTimestamp("create_date"));
