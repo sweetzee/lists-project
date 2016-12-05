@@ -15,6 +15,7 @@ public class ListModel {
 	private Date createDate = null;
 	private UUID updateUser = null;
 	private Date updateDate = null;
+	private List<UUID> itemSortOrder = null;
 
 	private List<ItemModel> itemModels = new ArrayList<ItemModel>();
 
@@ -65,6 +66,14 @@ public class ListModel {
 
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
+	}
+
+	public List<UUID> getItemSortOrder() {
+		return itemSortOrder;
+	}
+
+	public void setItemSortOrder(List<UUID> itemSortOrder) {
+		this.itemSortOrder = itemSortOrder;
 	}
 
 	public List<ItemModel> getItemModels() {

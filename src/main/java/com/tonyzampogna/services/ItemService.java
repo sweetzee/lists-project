@@ -6,6 +6,7 @@ import com.tonyzampogna.factory.ListsDatabaseSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,48 +30,70 @@ public class ItemService {
 
 
 	/////////////////////////////////////////////////
-	// Create Methods
+	// Service Methods
 	/////////////////////////////////////////////////
 
-	public void createItem(ItemModel itemModel) {
-		// Get the Session.
+	/**
+	 * Create
+	 */
+	public List<ItemModel> createItemsByItemId(List<ItemModel> itemModelList) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		// Create the PreparedStatement if it doesn't exist.
-		if (PS_CREATE_ITEM == null) {
-			PS_CREATE_ITEM = session.prepare(
-				"INSERT INTO items (item_id, list_id, item_name, create_user, create_date, update_user, update_date) " +
-				"VALUES (:itemId, :listId, :itemName, :createUser, :createDate, :updateUser, :updateDate)");
+		// For each ItemModel...
+		for (ItemModel itemModel : itemModelList) {
+			UUID itemId = itemModel.getItemId();
+
+			// Create a new user ID, if necessary.
+			if (StringUtils.isEmpty(itemId)) {
+				itemId = UUID.randomUUID();
+				itemModel.setListId(itemId);
+			}
+
+			// Generate a log buffer.
+			log.info("Creating item in the database. Item ID: " + itemId);
+
+			// Make sure our logging fields are not empty.
+			if (StringUtils.isEmpty(itemModel.getCreateUser()) ||
+				StringUtils.isEmpty(itemModel.getCreateDate()) ||
+				StringUtils.isEmpty(itemModel.getUpdateUser()) ||
+				StringUtils.isEmpty(itemModel.getUpdateDate())) {
+				throw new RuntimeException("The create and update user and timestamp cannot be blank. Item: " + itemId);
+			}
 		}
 
-		BoundStatement boundStatement = PS_CREATE_ITEM.bind();
-		updateBoundStatement(boundStatement, itemModel);
+		// Execute Database Transaction
+		BatchStatement batchStatement = null;
+		List<BoundStatement> boundStatements = getCreateItemsBoundStatements(itemModelList);
+		if (boundStatements != null) {
+			batchStatement.addAll(boundStatements);
+			session.execute(batchStatement);
+		}
 
-		session.execute(boundStatement);
+		return itemModelList;
 	}
 
-
-	/////////////////////////////////////////////////
-	// Read Methods
-	/////////////////////////////////////////////////
-
+	/**
+	 * Read (by itemId)
+	 */
 	public ItemModel getItemById(UUID itemId) {
 		ItemModel itemModel = null;
-
-		// Get the Session.
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		// Create the PreparedStatement if it doesn't exist.
+		log.info("Reading item from the database (by itemId). Item ID: " + itemId);
+
+		// Create the PreparedStatement if it does not exist.
 		if (PS_GET_ITEM_BY_ITEMID == null) {
 			PS_GET_ITEM_BY_ITEMID = session.prepare(
 				"SELECT item_id, list_id, item_name, create_user, create_date, update_user, update_date " +
 				"FROM items WHERE item_id = :itemId");
 		}
 
+		// Execute Database Transaction
 		BoundStatement boundStatement = PS_GET_ITEM_BY_ITEMID.bind();
 		boundStatement.setUUID("itemId", itemId);
-
 		ResultSet resultSet = session.execute(boundStatement);
+
+		// Transform Results
 		Row row = resultSet.one();
 		if (row != null) {
 			itemModel = transformRowToItem(row);
@@ -79,13 +102,16 @@ public class ItemService {
 		return itemModel;
 	}
 
+	/**
+	 * Read (by listId)
+	 */
 	public List<ItemModel> getItemsByListId(UUID listId) {
 		List<ItemModel> itemModelList = null;
-
-		// Get the Session.
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		// Create the PreparedStatement if it doesn't exist.
+		log.info("Reading items from the database for list. List ID: " + listId);
+
+		// Create the PreparedStatement if it does not exist.
 		if (PS_GET_ITEMS_BY_LISTID == null) {
 			PS_GET_ITEMS_BY_LISTID = session.prepare(
 				"SELECT item_id, list_id, item_name, create_user, create_date, update_user, update_date " +
@@ -93,11 +119,13 @@ public class ItemService {
 			);
 		}
 
+		// Execute Database Transaction
 		BoundStatement boundStatement = PS_GET_ITEMS_BY_LISTID.bind();
 		boundStatement.setUUID("listId", listId);
 		boundStatement.setFetchSize(1000);
-
 		ResultSet resultSet = session.execute(boundStatement);
+
+		// Transform Results
 		for (Row row : resultSet) {
 			if (resultSet.getAvailableWithoutFetching() == 100 && !resultSet.isFullyFetched()) {
 				resultSet.fetchMoreResults();
@@ -112,22 +140,151 @@ public class ItemService {
 		return itemModelList;
 	}
 
-
-	/////////////////////////////////////////////////
-	// Update Methods
-	/////////////////////////////////////////////////
-
-	public void updateItemByItemId(ItemModel itemModel) {
-		List<ItemModel> itemModelList = new ArrayList<ItemModel>();
-		itemModelList.add(itemModel);
-		updateItemsByItemId(itemModelList);
-	}
-
-	public void updateItemsByItemId(List<ItemModel> itemModelList) {
-		// Get the Session.
+	/**
+	 * Update
+	 */
+	public List<ItemModel> updateItemsByItemId(List<ItemModel> itemModelList) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		// Create the PreparedStatement if it doesn't exist.
+		// For each ItemModel...
+		for (ItemModel itemModel : itemModelList) {
+			UUID itemId = itemModel.getItemId();
+
+			// Create a new user ID, if necessary.
+			if (StringUtils.isEmpty(itemId)) {
+				itemId = UUID.randomUUID();
+				itemModel.setListId(itemId);
+			}
+
+			// Generate a log buffer.
+			log.info("Updating item in the database. Item ID: " + itemId);
+
+			// Make sure our logging fields are not empty.
+			if (StringUtils.isEmpty(itemModel.getCreateUser()) ||
+				StringUtils.isEmpty(itemModel.getCreateDate()) ||
+				StringUtils.isEmpty(itemModel.getUpdateUser()) ||
+				StringUtils.isEmpty(itemModel.getUpdateDate())) {
+				throw new RuntimeException("The create and update user and timestamp cannot be blank. Item: " + itemId);
+			}
+		}
+
+		// Execute Database Transaction
+		BatchStatement batchStatement = null;
+		List<BoundStatement> boundStatements = getUpdateItemsBoundStatements(itemModelList);
+		if (boundStatements != null) {
+			batchStatement.addAll(boundStatements);
+			session.execute(batchStatement);
+		}
+
+		return itemModelList;
+	}
+
+	/**
+	 * Delete
+	 */
+	public List<ItemModel> deleteItemsByItemId(List<ItemModel> itemModelList) {
+		Session session = listsDatabaseSessionFactory.getSession();
+
+		// For each ItemModel...
+		for (ItemModel itemModel : itemModelList) {
+			UUID itemId = itemModel.getItemId();
+
+			// Create a new user ID, if necessary.
+			if (StringUtils.isEmpty(itemId)) {
+				itemId = UUID.randomUUID();
+				itemModel.setListId(itemId);
+			}
+
+			// Generate a log buffer.
+			log.info("Deleting item in the database. Item ID: " + itemId);
+
+			// Make sure our logging fields are not empty.
+			if (StringUtils.isEmpty(itemModel.getCreateUser()) ||
+				StringUtils.isEmpty(itemModel.getCreateDate()) ||
+				StringUtils.isEmpty(itemModel.getUpdateUser()) ||
+				StringUtils.isEmpty(itemModel.getUpdateDate())) {
+				throw new RuntimeException("The create and update user and timestamp cannot be blank. Item: " + itemId);
+			}
+		}
+
+		// Execute Database Transaction
+		BatchStatement batchStatement = null;
+		List<BoundStatement> boundStatements = getDeleteItemsBoundStatements(itemModelList);
+		if (boundStatements != null) {
+			batchStatement.addAll(boundStatements);
+			session.execute(batchStatement);
+		}
+
+		return itemModelList;
+	}
+
+
+	/////////////////////////////////////////////////
+	// Bound Statement Methods
+	/////////////////////////////////////////////////
+
+	/**
+	 * Return the bound statements to create a list of items.
+	 */
+	public List<BoundStatement> getCreateItemsBoundStatements(List<ItemModel> itemModelList) {
+		List<BoundStatement> boundStatements = null;
+		Session session = listsDatabaseSessionFactory.getSession();
+
+		// Create the PreparedStatement if it does not exist.
+		if (PS_CREATE_ITEM == null) {
+			PS_CREATE_ITEM = session.prepare(
+				"INSERT INTO items (item_id, list_id, item_name, create_user, create_date, update_user, update_date) " +
+				"VALUES (:itemId, :listId, :itemName, :createUser, :createDate, :updateUser, :updateDate)");
+		}
+
+		if (itemModelList != null) {
+			boundStatements = new ArrayList<BoundStatement>();
+
+			for (ItemModel itemModel : itemModelList) {
+				BoundStatement boundStatement = PS_CREATE_ITEM.bind();
+				updateBoundStatement(boundStatement, itemModel);
+				boundStatements.add(boundStatement);
+			}
+		}
+
+		return boundStatements;
+	}
+
+	/**
+	 * Return the bound statements to read a list of items.
+	 */
+	public List<BoundStatement> getReadItemsBoundStatements(List<ItemModel> itemModelList) {
+		List<BoundStatement> boundStatements = null;
+		Session session = listsDatabaseSessionFactory.getSession();
+
+		// Create the PreparedStatement if it does not exist.
+		if (PS_CREATE_ITEM == null) {
+			PS_CREATE_ITEM = session.prepare(
+				"INSERT INTO items (item_id, list_id, item_name, create_user, create_date, update_user, update_date) " +
+				"VALUES (:itemId, :listId, :itemName, :createUser, :createDate, :updateUser, :updateDate)");
+		}
+
+		if (itemModelList != null) {
+			boundStatements = new ArrayList<BoundStatement>();
+
+			for (ItemModel itemModel : itemModelList) {
+				BoundStatement boundStatement = PS_CREATE_ITEM.bind();
+				updateBoundStatement(boundStatement, itemModel);
+				boundStatements.add(boundStatement);
+			}
+		}
+
+		return boundStatements;
+	}
+
+	/**
+	 * Return the bound statements to update a list of items.
+	 */
+	public List<BoundStatement> getUpdateItemsBoundStatements(List<ItemModel> itemModelList) {
+		List<BoundStatement> boundStatements = null;
+		Session session = listsDatabaseSessionFactory.getSession();
+
+		// Create the PreparedStatement if it does not exist.
 		if (PS_UPDATE_ITEM_BY_ITEMID == null) {
 			PS_UPDATE_ITEM_BY_ITEMID = session.prepare(
 				"UPDATE items SET " +
@@ -138,52 +295,46 @@ public class ItemService {
 				"create_date = :createDate, " +
 				"update_user = :updateUser, " +
 				"update_date = :updateDate " +
-				"WHERE list_id = :listId");
+				"WHERE item_id = :itemId");
 		}
 
-		BatchStatement batchStatement = null;
-		BoundStatement boundStatement = null;
-		for (ItemModel itemModel : itemModelList) {
-			boundStatement = PS_UPDATE_ITEM_BY_ITEMID.bind();
-			updateBoundStatement(boundStatement, itemModel);
-			batchStatement.add(boundStatement);
+		if (itemModelList != null) {
+			boundStatements = new ArrayList<BoundStatement>();
+
+			for (ItemModel itemModel : itemModelList) {
+				BoundStatement boundStatement = PS_UPDATE_ITEM_BY_ITEMID.bind();
+				updateBoundStatement(boundStatement, itemModel);
+				boundStatements.add(boundStatement);
+			}
 		}
 
-		session.execute(batchStatement);
+		return boundStatements;
 	}
 
-
-	/////////////////////////////////////////////////
-	// Delete Methods
-	/////////////////////////////////////////////////
-
-	public void deleteItemByItemId(UUID itemId) {
-		List<ItemModel> itemModelList = new ArrayList<ItemModel>();
-		ItemModel itemModel = new ItemModel();
-		itemModel.setItemId(itemId);
-		itemModelList.add(itemModel);
-		deleteItemsByItemId(itemModelList);
-	}
-
-	public void deleteItemsByItemId(List<ItemModel> itemModelList) {
-		// Get the Session.
+	/**
+	 * Return the bound statements to delete a list of items.
+	 */
+	public List<BoundStatement> getDeleteItemsBoundStatements(List<ItemModel> itemModelList) {
+		List<BoundStatement> boundStatements = null;
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		// Create the PreparedStatement if it doesn't exist.
+		// Create the PreparedStatement if it does not exist.
 		if (PS_DELETE_ITEM_BY_ITEMID == null) {
 			PS_DELETE_ITEM_BY_ITEMID = session.prepare(
 				"DELETE FROM items WHERE item_id = :itemId");
 		}
 
-		BatchStatement batchStatement = null;
-		BoundStatement boundStatement = null;
-		for (ItemModel itemModel : itemModelList) {
-			boundStatement = PS_DELETE_ITEM_BY_ITEMID.bind();
-			updateBoundStatement(boundStatement, itemModel);
-			batchStatement.add(boundStatement);
+		if (itemModelList != null) {
+			boundStatements = new ArrayList<BoundStatement>();
+
+			for (ItemModel itemModel : itemModelList) {
+				BoundStatement boundStatement = PS_DELETE_ITEM_BY_ITEMID.bind();
+				updateBoundStatement(boundStatement, itemModel);
+				boundStatements.add(boundStatement);
+			}
 		}
 
-		session.execute(batchStatement);
+		return boundStatements;
 	}
 
 

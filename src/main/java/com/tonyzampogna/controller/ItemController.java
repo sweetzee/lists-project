@@ -2,6 +2,7 @@ package com.tonyzampogna.controller;
 
 import com.tonyzampogna.domain.ListModel;
 import com.tonyzampogna.domain.UserModel;
+import com.tonyzampogna.services.ItemService;
 import com.tonyzampogna.services.ListService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,11 +15,11 @@ import java.util.UUID;
 
 
 @RestController
-public class ListController extends BaseController {
-	private static final Logger log = LoggerFactory.getLogger(UserController.class);
+public class ItemController extends BaseController {
+	private static final Logger log = LoggerFactory.getLogger(ItemController.class);
 
 	@Autowired
-	private ListService listService;
+	private ItemService itemService;
 
 
 	/////////////////////////////////////////////////
@@ -26,19 +27,19 @@ public class ListController extends BaseController {
 	/////////////////////////////////////////////////
 
 	/**
-	 * Create a new list.
+	 * Create new items.
 	 *
 	 * It is possible to update or delete a list by ID as well.
 	 */
 	@RequestMapping(
-			value = "/list",
+			value = "/items",
 			method = RequestMethod.POST,
 			consumes = "application/json",
 			produces = "application/json")
 	public ListModel createList(
 			@RequestParam(name = "userId") String createUserId,
 			@RequestParam(name = "action", required = false) String action,
-			@RequestBody ListModel listModel) {
+			@RequestBody ListModel<> listModel) {
 
 		if ("UPDATE".equals(action)) {
 			listModel = handleUpdateListRequest(createUserId, listModel);
@@ -117,16 +118,16 @@ public class ListController extends BaseController {
 	 * Delete list by ID
 	 */
 	@RequestMapping(
-			value = "/list/{listId}",
+			value = "/items",
 			method = RequestMethod.DELETE,
 			consumes = "application/json",
 			produces = "application/json")
-	public ListModel deleteList(
+	public ListModel deleteItems(
 			@RequestParam(name = "userId") String deleteUserId,
 			@PathVariable(name = "listId") String listId,
 			@RequestBody ListModel listModel) {
 
-		return handleDeleteListRequest(deleteUserId, listModel);
+		return handleDeleteItemsRequest(deleteUserId, listModel);
 	}
 
 

@@ -60,19 +60,20 @@ public class UserService {
 
 		// Username must not be blank.
 		if (StringUtils.isEmpty(username)) {
-			throw new RuntimeException("Username must not be blank during creation. User: " + userId + ". Username: " + username);
+			throw new RuntimeException("Username must not be blank during creation. User ID: " + userId + ". Username: " + username);
 		}
 
 		// Password must not be blank.
 		if (StringUtils.isEmpty(password)) {
-			throw new RuntimeException("Password must not be blank during creation. User: " + userId + ". Username: " + username);
+			throw new RuntimeException("Password must not be blank during creation. User ID: " + userId + ". Username: " + username);
 		}
+
 		// Make sure our logging fields are not empty.
 		if (StringUtils.isEmpty(userModel.getCreateUser()) ||
 			StringUtils.isEmpty(userModel.getCreateDate()) ||
 			StringUtils.isEmpty(userModel.getUpdateUser()) ||
 			StringUtils.isEmpty(userModel.getUpdateDate())) {
-			throw new RuntimeException("The create and update user and timestamp cannot be blank. User: " + userId + ". Username: " + username);
+			throw new RuntimeException("The create and update user and timestamp cannot be blank. User ID: " + userId + ". Username: " + username);
 		}
 
 		// Create the PreparedStatement if it does not exist.
@@ -101,7 +102,7 @@ public class UserService {
 		UserModel userModel = null;
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		log.info("Reading user from the database (by userId). User: " + userId);
+		log.info("Reading user from the database (by userId). User ID: " + userId);
 
 		// Create the PreparedStatement if it does not exist.
 		if (PS_GET_USER_BY_USERID == null) {
@@ -129,7 +130,7 @@ public class UserService {
 		UserModel userModel = null;
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		log.info("Reading user from the database (by username). User: " + username);
+		log.info("Reading user from the database (by username). User ID: " + username);
 
 		// Create the PreparedStatement if it does not exist.
 		if (PS_GET_USER_BY_USERNAME == null) {
@@ -168,7 +169,7 @@ public class UserService {
 		// Make sure our logging fields are not empty.
 		if (StringUtils.isEmpty(userModel.getUpdateUser()) ||
 			StringUtils.isEmpty(userModel.getUpdateDate())) {
-			throw new RuntimeException("The update user and timestamp cannot be blank. User: " + userId + ". Username: " + username);
+			throw new RuntimeException("The update user and timestamp cannot be blank. User ID: " + userId + ". Username: " + username);
 		}
 
 		// Create the PreparedStatement if it does not exist.
@@ -233,7 +234,7 @@ public class UserService {
 		// Make sure our logging fields are not empty.
 		if (StringUtils.isEmpty(userModel.getUpdateUser()) ||
 			StringUtils.isEmpty(userModel.getUpdateDate())) {
-			throw new RuntimeException("The update user and timestamp cannot be blank. User: " + userId + ". Username: " + username);
+			throw new RuntimeException("The update user and timestamp cannot be blank. User ID: " + userId + ". Username: " + username);
 		}
 
 		// Create the PreparedStatement if it does not exist.
@@ -267,13 +268,7 @@ public class UserService {
 		String username = userModel.getUsername();
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		log.info("Deleting user credentials in the database. User ID: " + userId + ". Username: " + username);
-
-		// Make sure our logging fields are not empty.
-		if (StringUtils.isEmpty(userModel.getUpdateUser()) ||
-			StringUtils.isEmpty(userModel.getUpdateDate())) {
-			throw new RuntimeException("The update user and timestamp cannot be blank. User: " + userId + ". Username: " + username);
-		}
+		log.info("Deleting user in the database. User ID: " + userId + ". Username: " + username);
 
 		// Create the PreparedStatement if it does not exist.
 		if (PS_DELETE_USER_BY_USERID == null) {
