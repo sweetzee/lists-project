@@ -1,5 +1,7 @@
 package com.tonyzampogna.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -17,6 +19,7 @@ public class ListModel {
 	private Date updateDate = null;
 	private List<UUID> itemSortOrder = null;
 
+	@JsonProperty("items")
 	private List<ItemModel> itemModels = new ArrayList<ItemModel>();
 
 

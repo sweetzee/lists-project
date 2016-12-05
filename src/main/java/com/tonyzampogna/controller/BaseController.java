@@ -21,7 +21,11 @@ public abstract class BaseController {
 
 	@Autowired
 	private UserService userService;
+
+	@Autowired
 	private ListService listService;
+
+	@Autowired
 	private ItemService itemService;
 
 

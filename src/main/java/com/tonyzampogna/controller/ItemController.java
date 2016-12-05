@@ -35,7 +35,7 @@ public class ItemController extends BaseController {
 			method = RequestMethod.POST,
 			consumes = "application/json",
 			produces = "application/json")
-	public List<ItemModel> createList(
+	public List<ItemModel> createItems(
 			@RequestParam(name = "userId") String createUserId,
 			@RequestParam(name = "action", required = false) String action,
 			@RequestBody List<ItemModel> itemModelList) {
@@ -60,7 +60,7 @@ public class ItemController extends BaseController {
 			value = "/item/{itemId}",
 			method = RequestMethod.GET,
 			produces = "application/json")
-	public ItemModel getList(
+	public ItemModel getItem(
 			@RequestParam(name = "userId") String readUserId,
 			@PathVariable(name = "itemId") String itemId) {
 
@@ -82,14 +82,14 @@ public class ItemController extends BaseController {
 	}
 
 	/**
-	 * Update list by ID
+	 * Update items by ID
 	 */
 	@RequestMapping(
 			value = "/items",
 			method = RequestMethod.PUT,
 			consumes = "application/json",
 			produces = "application/json")
-	public List<ItemModel> updateList(
+	public List<ItemModel> updateItems(
 			@RequestParam(name = "userId") String updateUserId,
 			@RequestBody List<ItemModel> itemModelList) {
 
@@ -97,7 +97,7 @@ public class ItemController extends BaseController {
 	}
 
 	/**
-	 * Delete list by ID
+	 * Delete items by ID
 	 */
 	@RequestMapping(
 			value = "/items",
@@ -119,7 +119,7 @@ public class ItemController extends BaseController {
 	private List<ItemModel> handleCreateItemsRequest(String createUserId, List<ItemModel> itemModelList) {
 		log.info("A request has come in to create a list. Request User ID: " + createUserId);
 
-		// Change the create and update fields.
+		// Set the create and update fields.
 		for (ItemModel itemModel : itemModelList) {
 			itemModel.setCreateUser(UUID.fromString(createUserId));
 			itemModel.setCreateDate(new Date());
@@ -152,7 +152,7 @@ public class ItemController extends BaseController {
 	private List<ItemModel> handleUpdateItemsRequest(String updateUserId, List<ItemModel> itemModelList) {
 		log.info("A request has come in to update a list. Request User ID: " + updateUserId);
 
-		// Update the update fields.
+		// Set the update fields.
 		for (ItemModel itemModel : itemModelList) {
 			itemModel.setUpdateUser(UUID.fromString(updateUserId));
 			itemModel.setUpdateDate(new Date());

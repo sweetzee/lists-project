@@ -8,6 +8,7 @@ import com.tonyzampogna.factory.ListsDatabaseSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.UUID;
 /**
  * This class contains the methods for operating on ListModels.
  */
+@Service
 public class ListService {
 	private static final Logger log = LoggerFactory.getLogger(ListService.class);
 
@@ -32,6 +34,9 @@ public class ListService {
 	@Autowired
 	private ListsDatabaseSessionFactory listsDatabaseSessionFactory;
 
+	@Autowired
+	private ItemService itemService;
+
 
 	/////////////////////////////////////////////////
 	// Service Methods
@@ -40,57 +45,69 @@ public class ListService {
 	/**
 	 * Create
 	 */
-	public ListModel createList(ListModel listModel) {
-		UUID listId = listModel.getListId();
+	public List<ListModel> createLists(List<ListModel> listModelList) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		// Create a new user ID, if necessary.
-		if (StringUtils.isEmpty(listId)) {
-			listId = UUID.randomUUID();
-			listModel.setListId(listId);
-		}
+		// For each ListModel...
+		for (ListModel listModel : listModelList) {
+			UUID listId = listModel.getListId();
 
-		log.info("Creating list in the database. List ID: " + listId);
+			// Create a new ID, if necessary.
+			if (StringUtils.isEmpty(listId)) {
+				listId = UUID.randomUUID();
+				listModel.setListId(listId);
+			}
 
-		// Make sure our logging fields are not empty.
-		if (StringUtils.isEmpty(listModel.getCreateUser()) ||
-			StringUtils.isEmpty(listModel.getCreateDate()) ||
-			StringUtils.isEmpty(listModel.getUpdateUser()) ||
-			StringUtils.isEmpty(listModel.getUpdateDate())) {
-			throw new RuntimeException("The create and update user and timestamp cannot be blank. List: " + listId);
-		}
+			// Generate a log buffer.
+			log.info("Creating list in the database. List ID: " + listId);
 
-		// Create the PreparedStatement if it does not exist.
-		if (PS_CREATE_LIST == null) {
-			PS_CREATE_LIST = session.prepare(
-				"INSERT INTO lists (list_id, list_name, create_user, create_date, update_user, update_date) " +
-				"VALUES (:listId, :listName, :createUser, :createDate, :updateUser, :updateDate)");
+			// Make sure our logging fields are not empty.
+			if (StringUtils.isEmpty(listModel.getCreateUser()) ||
+				StringUtils.isEmpty(listModel.getCreateDate()) ||
+				StringUtils.isEmpty(listModel.getUpdateUser()) ||
+				StringUtils.isEmpty(listModel.getUpdateDate())) {
+				throw new RuntimeException("The create and update user and timestamp cannot be blank. Item: " + listId);
+			}
 		}
 
 		// Execute Database Transaction
-		BoundStatement boundStatement = PS_CREATE_LIST.bind();
-		updateBoundStatement(boundStatement, listModel);
-		session.execute(boundStatement);
+		BatchStatement batchStatement = null;
+		List<BoundStatement> boundStatements = getCreateListsBoundStatements(listModelList);
+		if (boundStatements != null) {
+			batchStatement.addAll(boundStatements);
+			session.execute(batchStatement);
+		}
 
-		return getListById(listId);
+		return listModelList;
 	}
 
 	/**
 	 * Create (for User)
 	 */
-	public ListModel createListForUser(UserModel userModel, ListModel listModel) {
+	public List<ListModel> createListsForUser(UserModel userModel, List<ListModel> listModelList) {
 		UUID userId = userModel.getUserId();
-		UUID listId = listModel.getListId();
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		log.info("Creating list for user in the database. List ID: " + listId + ". User: " + userId);
+		// For each ListModel...
+		for (ListModel listModel : listModelList) {
+			UUID listId = listModel.getListId();
 
-		// Make sure our logging fields are not empty.
-		if (StringUtils.isEmpty(listModel.getCreateUser()) ||
-			StringUtils.isEmpty(listModel.getCreateDate()) ||
-			StringUtils.isEmpty(listModel.getUpdateUser()) ||
-			StringUtils.isEmpty(listModel.getUpdateDate())) {
-			throw new RuntimeException("The create and update user and timestamp cannot be blank. List: " + listId);
+			// Create a new ID, if necessary.
+			if (StringUtils.isEmpty(listId)) {
+				listId = UUID.randomUUID();
+				listModel.setListId(listId);
+			}
+
+			// Generate a log buffer.
+			log.info("Creating list in the database for user. User ID: " + userId + ". List ID: " + listId);
+
+			// Make sure our logging fields are not empty.
+			if (StringUtils.isEmpty(listModel.getCreateUser()) ||
+				StringUtils.isEmpty(listModel.getCreateDate()) ||
+				StringUtils.isEmpty(listModel.getUpdateUser()) ||
+				StringUtils.isEmpty(listModel.getUpdateDate())) {
+				throw new RuntimeException("The create and update user and timestamp cannot be blank. List ID: " + listId);
+			}
 		}
 
 		// Create the PreparedStatement if it does not exist.
@@ -99,27 +116,24 @@ public class ListService {
 				"INSERT INTO lists (user_id, list_id) VALUES (:userId, :listId)");
 		}
 
-		// Create the PreparedStatement if it does not exist.
-		if (PS_CREATE_LIST == null) {
-			PS_CREATE_LIST = session.prepare(
-				"INSERT INTO user_lists (list_id, list_name, create_user, create_date, update_user, update_date) " +
-				"VALUES (:listId, :listName, :createUser, :createDate, :updateUser, :updateDate)");
-		}
-
 		// Execute Database Transaction
 		BatchStatement batchStatement = new BatchStatement();
-		// Create User List
-		BoundStatement boundStatement1 = PS_CREATE_USER_LIST.bind();
-		boundStatement1.setUUID("userId", userId);
-		boundStatement1.setUUID("listId", listId);
-		batchStatement.add(boundStatement1);
-		// Create List
-		BoundStatement boundStatement2 = PS_CREATE_LIST.bind();
-		updateBoundStatement(boundStatement2, listModel);
-		batchStatement.add(boundStatement2);
+		List<BoundStatement> boundStatements = new ArrayList<BoundStatement>();
+		// Create user lists bound statements.
+		if (listModelList != null) {
+			for (ListModel listModel : listModelList) {
+				BoundStatement boundStatement = PS_CREATE_USER_LIST.bind();
+				boundStatement.setUUID("userId", userId);
+				boundStatement.setUUID("listId", listModel.getListId());
+				boundStatements.add(boundStatement);
+			}
+		}
+		// Create lists bound statements.
+		List<BoundStatement> listsBoundStatements = getCreateListsBoundStatements(listModelList);
+		batchStatement.addAll(listsBoundStatements);
 		session.execute(batchStatement);
 
-		return listModel;
+		return listModelList;
 	}
 
 	/**
@@ -134,7 +148,7 @@ public class ListService {
 		// Create the PreparedStatement if it does not exist.
 		if (PS_GET_LIST_BY_LISTID == null) {
 			PS_GET_LIST_BY_LISTID = session.prepare(
-				"SELECT list_id, list_name, create_user, create_date, update_user, update_date " +
+				"SELECT list_id, list_name, item_sort_order, create_user, create_date, update_user, update_date " +
 				"FROM lists WHERE list_id = :listId");
 		}
 
@@ -164,7 +178,7 @@ public class ListService {
 		// Create the PreparedStatement if it does not exist.
 		if (PS_GET_LISTS_BY_USERID == null) {
 			PS_GET_LISTS_BY_USERID = session.prepare(
-				"SELECT l.list_id, l.list_name, l.create_user, l.create_date, l.update_user, l.update_date " +
+				"SELECT l.list_id, l.list_name, l.item_sort_order, l.create_user, l.create_date, l.update_user, l.update_date " +
 				"FROM lists l, user_lists ul " +
 				"WHERE ul.user_id = :userId " +
 				"AND l.list_id == ul.list_id"
@@ -204,7 +218,7 @@ public class ListService {
 		// Create the PreparedStatement if it does not exist.
 		if (PS_GET_LISTS_BY_USERNAME == null) {
 			PS_GET_LISTS_BY_USERNAME = session.prepare(
-				"SELECT l.list_id, l.list_name, l.create_user, l.create_date, l.update_user, l.update_date " +
+				"SELECT l.list_id, l.list_name, l.item_sort_order, l.create_user, l.create_date, l.update_user, l.update_date " +
 				"FROM users u, lists l, user_lists ul " +
 				"WHERE u.username = :username " +
 				"AND u.user_id == ul.user_id " +
@@ -236,17 +250,109 @@ public class ListService {
 	/**
 	 * Update
 	 */
-	public ListModel updateList(ListModel listModel) {
-		UUID listId = listModel.getListId();
+	public List<ListModel> updateLists(List<ListModel> listModelList) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		log.info("Updating list in the database. List ID: " + listId);
+		// For each ListModel...
+		for (ListModel listModel : listModelList) {
+			UUID listId = listModel.getListId();
 
-		// Make sure our logging fields are not empty.
-		if (StringUtils.isEmpty(listModel.getUpdateUser()) ||
-			StringUtils.isEmpty(listModel.getUpdateDate())) {
-			throw new RuntimeException("The update user and timestamp cannot be blank. List ID: " + listId);
+			// Create a new ID, if necessary.
+			if (StringUtils.isEmpty(listId)) {
+				listId = UUID.randomUUID();
+				listModel.setListId(listId);
+			}
+
+			// Generate a log buffer.
+			log.info("Updating list in the database. List ID: " + listId);
+
+			// Make sure our logging fields are not empty.
+			if (StringUtils.isEmpty(listModel.getUpdateUser()) ||
+				StringUtils.isEmpty(listModel.getUpdateDate())) {
+				throw new RuntimeException("The update user and timestamp cannot be blank. Item: " + listId);
+			}
 		}
+
+		// Execute Database Transaction
+		BatchStatement batchStatement = null;
+		List<BoundStatement> boundStatements = getUpdateListsBoundStatements(listModelList);
+		if (boundStatements != null) {
+			batchStatement.addAll(boundStatements);
+			session.execute(batchStatement);
+		}
+
+		return listModelList;
+	}
+
+	/**
+	 * Delete
+	 */
+	public List<ListModel> deleteLists(List<ListModel> listModelList) {
+		Session session = listsDatabaseSessionFactory.getSession();
+
+		// For each ListModel...
+		for (ListModel listModel : listModelList) {
+			UUID listId = listModel.getListId();
+
+			// Create a new user ID, if necessary.
+			if (StringUtils.isEmpty(listId)) {
+				listId = UUID.randomUUID();
+				listModel.setListId(listId);
+			}
+
+			// Generate a log buffer.
+			log.info("Deleting list from the database. List ID: " + listId);
+		}
+
+		// Execute Database Transaction
+		BatchStatement batchStatement = null;
+		List<BoundStatement> boundStatements = getDeleteListsBoundStatements(listModelList);
+		if (boundStatements != null) {
+			batchStatement.addAll(boundStatements);
+			session.execute(batchStatement);
+		}
+
+		return listModelList;
+	}
+
+
+	/////////////////////////////////////////////////
+	// Bound Statement Methods
+	/////////////////////////////////////////////////
+
+	/**
+	 * Return the bound statements to create a list of lists.
+	 */
+	public List<BoundStatement> getCreateListsBoundStatements(List<ListModel> listModelList) {
+		List<BoundStatement> boundStatements = null;
+		Session session = listsDatabaseSessionFactory.getSession();
+
+		// Create the PreparedStatement if it does not exist.
+		if (PS_CREATE_LIST == null) {
+			PS_CREATE_LIST = session.prepare(
+				"INSERT INTO lists (list_id, list_name, item_sort_order, create_user, create_date, update_user, update_date) " +
+				"VALUES (:listId, :listName, :item_sort_order, :createUser, :createDate, :updateUser, :updateDate)");
+		}
+
+		if (listModelList != null) {
+			boundStatements = new ArrayList<BoundStatement>();
+
+			for (ListModel listModel : listModelList) {
+				BoundStatement boundStatement = PS_CREATE_LIST.bind();
+				updateBoundStatement(boundStatement, listModel);
+				boundStatements.add(boundStatement);
+			}
+		}
+
+		return boundStatements;
+	}
+
+	/**
+	 * Return the bound statements to update a list of lists.
+	 */
+	public List<BoundStatement> getUpdateListsBoundStatements(List<ListModel> listModelList) {
+		List<BoundStatement> boundStatements = null;
+		Session session = listsDatabaseSessionFactory.getSession();
 
 		// Create the PreparedStatement if it does not exist.
 		if (PS_UPDATE_LIST_BY_LISTID == null) {
@@ -254,27 +360,31 @@ public class ListService {
 				"UPDATE lists SET " +
 				"list_id = :listId, " +
 				"list_name = :listName, " +
+				"item_sort_order = :item_sort_order, " +
 				"update_user = :updateUser, " +
 				"update_date = :updateDate " +
 				"WHERE list_id = :listId");
 		}
 
-		// Execute Database Transaction
-		BoundStatement boundStatement = PS_UPDATE_LIST_BY_LISTID.bind();
-		updateBoundStatement(boundStatement, listModel);
-		session.execute(boundStatement);
+		if (listModelList != null) {
+			boundStatements = new ArrayList<BoundStatement>();
 
-		return listModel;
+			for (ListModel listModel : listModelList) {
+				BoundStatement boundStatement = PS_UPDATE_LIST_BY_LISTID.bind();
+				updateBoundStatement(boundStatement, listModel);
+				boundStatements.add(boundStatement);
+			}
+		}
+
+		return boundStatements;
 	}
 
 	/**
-	 * Delete
+	 * Return the bound statements to delete a list of lists.
 	 */
-	public ListModel deleteList(ListModel listModel) {
-		UUID listId = listModel.getListId();
+	public List<BoundStatement> getDeleteListsBoundStatements(List<ListModel> listModelList) {
+		List<BoundStatement> boundStatements = null;
 		Session session = listsDatabaseSessionFactory.getSession();
-
-		log.info("Deleting list credentials in the database. List ID: " + listId);
 
 		// Create the PreparedStatement if it does not exist.
 		if (PS_DELETE_LIST_BY_LISTID == null) {
@@ -282,12 +392,17 @@ public class ListService {
 				"DELETE FROM lists WHERE list_id = :listId");
 		}
 
-		// Execute Database Transaction
-		BoundStatement boundStatement = PS_DELETE_LIST_BY_LISTID.bind();
-		boundStatement.setUUID("listId", listId);
-		session.execute(boundStatement);
+		if (listModelList != null) {
+			boundStatements = new ArrayList<BoundStatement>();
 
-		return null;
+			for (ListModel listModel : listModelList) {
+				BoundStatement boundStatement = PS_DELETE_LIST_BY_LISTID.bind();
+				updateBoundStatement(boundStatement, listModel);
+				boundStatements.add(boundStatement);
+			}
+		}
+
+		return boundStatements;
 	}
 
 
@@ -302,6 +417,17 @@ public class ListService {
 		boundStatement.setTimestamp("createDate", listModel.getCreateDate());
 		boundStatement.setUUID("updateUser", listModel.getUpdateUser());
 		boundStatement.setTimestamp("updateDate", listModel.getUpdateDate());
+
+		// Update the sort order based on the list of items.
+		List<UUID> itemSortOrder = null;
+		if (listModel.getItemModels() != null) {
+			itemSortOrder = new ArrayList<UUID>();
+			for (ItemModel itemModel : listModel.getItemModels()) {
+				itemSortOrder.add(itemModel.getItemId());
+			}
+		}
+		listModel.setItemSortOrder(itemSortOrder);
+		boundStatement.setList("item_sort_order", itemSortOrder, UUID.class);
 	}
 
 	private ListModel transformRowToList(Row row) {
@@ -312,19 +438,28 @@ public class ListService {
 		ListModel listModel = new ListModel();
 		listModel.setListId(row.getUUID("list_id"));
 		listModel.setListName(row.getString("list_name"));
+		listModel.setItemSortOrder(row.getList("item_sort_order", UUID.class));
 		listModel.setCreateUser(row.getUUID("create_user"));
 		listModel.setCreateDate(row.getTimestamp("create_date"));
 		listModel.setUpdateUser(row.getUUID("update_user"));
 		listModel.setUpdateDate(row.getTimestamp("update_date"));
 
+		// Get the ItemModels from the database.
+		// Sort the item model list after fetching, then
+		// set it on the ListModel.
+		List<ItemModel> itemModelList = itemService.getItemsByListId(listModel.getListId());
+		List<ItemModel> sortedItemModelList = getSortedItemModels(
+				listModel.getItemSortOrder(), itemModelList);
+		listModel.setItemModels(sortedItemModelList);
+
 		return listModel;
 	}
 
 	/**
-	 * We store the UUIDs of the ItemModels on the ListModel.
-	 * This function reads the items.
+	 * Whenever the items on the list change, call this
+	 * to keep the item sort order up to date.
 	 */
-	private List<UUID> getItemSortOrder(ListModel listModel) {
+	private void updateItemSortOrder(ListModel listModel) {
 		List<UUID> itemSortOrder = null;
 
 		if (listModel.getItemModels() != null) {
@@ -335,7 +470,7 @@ public class ListService {
 			}
 		}
 
-		return itemSortOrder;
+		listModel.setItemSortOrder(itemSortOrder);
 	}
 
 	/**

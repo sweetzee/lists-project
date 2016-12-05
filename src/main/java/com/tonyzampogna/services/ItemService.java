@@ -6,6 +6,7 @@ import com.tonyzampogna.factory.ListsDatabaseSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.UUID;
 /**
  * This class contains the methods for operating on ItemModel.
  */
+@Service
 public class ItemService {
 	private static final Logger log = LoggerFactory.getLogger(ItemService.class);
 
@@ -43,7 +45,7 @@ public class ItemService {
 		for (ItemModel itemModel : itemModelList) {
 			UUID itemId = itemModel.getItemId();
 
-			// Create a new user ID, if necessary.
+			// Create a new ID, if necessary.
 			if (StringUtils.isEmpty(itemId)) {
 				itemId = UUID.randomUUID();
 				itemModel.setListId(itemId);
@@ -150,7 +152,7 @@ public class ItemService {
 		for (ItemModel itemModel : itemModelList) {
 			UUID itemId = itemModel.getItemId();
 
-			// Create a new user ID, if necessary.
+			// Create a new ID, if necessary.
 			if (StringUtils.isEmpty(itemId)) {
 				itemId = UUID.randomUUID();
 				itemModel.setListId(itemId);
@@ -160,11 +162,9 @@ public class ItemService {
 			log.info("Updating item in the database. Item ID: " + itemId);
 
 			// Make sure our logging fields are not empty.
-			if (StringUtils.isEmpty(itemModel.getCreateUser()) ||
-				StringUtils.isEmpty(itemModel.getCreateDate()) ||
-				StringUtils.isEmpty(itemModel.getUpdateUser()) ||
+			if (StringUtils.isEmpty(itemModel.getUpdateUser()) ||
 				StringUtils.isEmpty(itemModel.getUpdateDate())) {
-				throw new RuntimeException("The create and update user and timestamp cannot be blank. Item: " + itemId);
+				throw new RuntimeException("The update user and timestamp cannot be blank. Item: " + itemId);
 			}
 		}
 
@@ -189,22 +189,14 @@ public class ItemService {
 		for (ItemModel itemModel : itemModelList) {
 			UUID itemId = itemModel.getItemId();
 
-			// Create a new user ID, if necessary.
+			// Create a new ID, if necessary.
 			if (StringUtils.isEmpty(itemId)) {
 				itemId = UUID.randomUUID();
-				itemModel.setListId(itemId);
+				itemModel.setItemId(itemId);
 			}
 
 			// Generate a log buffer.
-			log.info("Deleting item in the database. Item ID: " + itemId);
-
-			// Make sure our logging fields are not empty.
-			if (StringUtils.isEmpty(itemModel.getCreateUser()) ||
-				StringUtils.isEmpty(itemModel.getCreateDate()) ||
-				StringUtils.isEmpty(itemModel.getUpdateUser()) ||
-				StringUtils.isEmpty(itemModel.getUpdateDate())) {
-				throw new RuntimeException("The create and update user and timestamp cannot be blank. Item: " + itemId);
-			}
+			log.info("Deleting item from the database. Item ID: " + itemId);
 		}
 
 		// Execute Database Transaction
@@ -227,33 +219,6 @@ public class ItemService {
 	 * Return the bound statements to create a list of items.
 	 */
 	public List<BoundStatement> getCreateItemsBoundStatements(List<ItemModel> itemModelList) {
-		List<BoundStatement> boundStatements = null;
-		Session session = listsDatabaseSessionFactory.getSession();
-
-		// Create the PreparedStatement if it does not exist.
-		if (PS_CREATE_ITEM == null) {
-			PS_CREATE_ITEM = session.prepare(
-				"INSERT INTO items (item_id, list_id, item_name, create_user, create_date, update_user, update_date) " +
-				"VALUES (:itemId, :listId, :itemName, :createUser, :createDate, :updateUser, :updateDate)");
-		}
-
-		if (itemModelList != null) {
-			boundStatements = new ArrayList<BoundStatement>();
-
-			for (ItemModel itemModel : itemModelList) {
-				BoundStatement boundStatement = PS_CREATE_ITEM.bind();
-				updateBoundStatement(boundStatement, itemModel);
-				boundStatements.add(boundStatement);
-			}
-		}
-
-		return boundStatements;
-	}
-
-	/**
-	 * Return the bound statements to read a list of items.
-	 */
-	public List<BoundStatement> getReadItemsBoundStatements(List<ItemModel> itemModelList) {
 		List<BoundStatement> boundStatements = null;
 		Session session = listsDatabaseSessionFactory.getSession();
 
