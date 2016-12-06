@@ -66,12 +66,12 @@ public class ListService {
 				StringUtils.isEmpty(listModel.getCreateDate()) ||
 				StringUtils.isEmpty(listModel.getUpdateUser()) ||
 				StringUtils.isEmpty(listModel.getUpdateDate())) {
-				throw new RuntimeException("The create and update user and timestamp cannot be blank. Item: " + listId);
+				throw new RuntimeException("The create and update user and timestamp cannot be blank. List ID: " + listId);
 			}
 		}
 
 		// Execute Database Transaction
-		BatchStatement batchStatement = null;
+		BatchStatement batchStatement = new BatchStatement();
 		List<BoundStatement> boundStatements = getCreateListsBoundStatements(listModelList);
 		if (boundStatements != null) {
 			batchStatement.addAll(boundStatements);
@@ -113,7 +113,7 @@ public class ListService {
 		// Create the PreparedStatement if it does not exist.
 		if (PS_CREATE_USER_LIST == null) {
 			PS_CREATE_USER_LIST = session.prepare(
-				"INSERT INTO lists (user_id, list_id) VALUES (:userId, :listId)");
+				"INSERT INTO user_lists (user_id, list_id) VALUES (:userId, :listId)");
 		}
 
 		// Execute Database Transaction
@@ -218,11 +218,11 @@ public class ListService {
 		// Create the PreparedStatement if it does not exist.
 		if (PS_GET_LISTS_BY_USERNAME == null) {
 			PS_GET_LISTS_BY_USERNAME = session.prepare(
-				"SELECT l.list_id, l.list_name, l.item_sort_order, l.create_user, l.create_date, l.update_user, l.update_date " +
-				"FROM users u, lists l, user_lists ul " +
-				"WHERE u.username = :username " +
-				"AND u.user_id == ul.user_id " +
-				"AND l.list_id == ul.list_id"
+				"SELECT list_id, list_name, item_sort_order, create_user, create_date, update_user, update_date " +
+				"FROM users, lists, user_lists " +
+				"WHERE users.username = :username " +
+				"AND users.user_id == user_lists.user_id " +
+				"AND lists.list_id == user_lists.list_id"
 			);
 		}
 
@@ -257,24 +257,18 @@ public class ListService {
 		for (ListModel listModel : listModelList) {
 			UUID listId = listModel.getListId();
 
-			// Create a new ID, if necessary.
-			if (StringUtils.isEmpty(listId)) {
-				listId = UUID.randomUUID();
-				listModel.setListId(listId);
-			}
-
 			// Generate a log buffer.
 			log.info("Updating list in the database. List ID: " + listId);
 
 			// Make sure our logging fields are not empty.
 			if (StringUtils.isEmpty(listModel.getUpdateUser()) ||
 				StringUtils.isEmpty(listModel.getUpdateDate())) {
-				throw new RuntimeException("The update user and timestamp cannot be blank. Item: " + listId);
+				throw new RuntimeException("The update user and timestamp cannot be blank. List ID: " + listId);
 			}
 		}
 
 		// Execute Database Transaction
-		BatchStatement batchStatement = null;
+		BatchStatement batchStatement = new BatchStatement();
 		List<BoundStatement> boundStatements = getUpdateListsBoundStatements(listModelList);
 		if (boundStatements != null) {
 			batchStatement.addAll(boundStatements);
@@ -294,18 +288,12 @@ public class ListService {
 		for (ListModel listModel : listModelList) {
 			UUID listId = listModel.getListId();
 
-			// Create a new user ID, if necessary.
-			if (StringUtils.isEmpty(listId)) {
-				listId = UUID.randomUUID();
-				listModel.setListId(listId);
-			}
-
 			// Generate a log buffer.
 			log.info("Deleting list from the database. List ID: " + listId);
 		}
 
 		// Execute Database Transaction
-		BatchStatement batchStatement = null;
+		BatchStatement batchStatement = new BatchStatement();
 		List<BoundStatement> boundStatements = getDeleteListsBoundStatements(listModelList);
 		if (boundStatements != null) {
 			batchStatement.addAll(boundStatements);

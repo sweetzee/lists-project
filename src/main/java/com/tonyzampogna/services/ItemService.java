@@ -48,7 +48,7 @@ public class ItemService {
 			// Create a new ID, if necessary.
 			if (StringUtils.isEmpty(itemId)) {
 				itemId = UUID.randomUUID();
-				itemModel.setListId(itemId);
+				itemModel.setItemId(itemId);
 			}
 
 			// Generate a log buffer.
@@ -59,12 +59,12 @@ public class ItemService {
 				StringUtils.isEmpty(itemModel.getCreateDate()) ||
 				StringUtils.isEmpty(itemModel.getUpdateUser()) ||
 				StringUtils.isEmpty(itemModel.getUpdateDate())) {
-				throw new RuntimeException("The create and update user and timestamp cannot be blank. Item: " + itemId);
+				throw new RuntimeException("The create and update user and timestamp cannot be blank. Item ID: " + itemId);
 			}
 		}
 
 		// Execute Database Transaction
-		BatchStatement batchStatement = null;
+		BatchStatement batchStatement = new BatchStatement();
 		List<BoundStatement> boundStatements = getCreateItemsBoundStatements(itemModelList);
 		if (boundStatements != null) {
 			batchStatement.addAll(boundStatements);
@@ -152,24 +152,18 @@ public class ItemService {
 		for (ItemModel itemModel : itemModelList) {
 			UUID itemId = itemModel.getItemId();
 
-			// Create a new ID, if necessary.
-			if (StringUtils.isEmpty(itemId)) {
-				itemId = UUID.randomUUID();
-				itemModel.setListId(itemId);
-			}
-
 			// Generate a log buffer.
 			log.info("Updating item in the database. Item ID: " + itemId);
 
 			// Make sure our logging fields are not empty.
 			if (StringUtils.isEmpty(itemModel.getUpdateUser()) ||
 				StringUtils.isEmpty(itemModel.getUpdateDate())) {
-				throw new RuntimeException("The update user and timestamp cannot be blank. Item: " + itemId);
+				throw new RuntimeException("The update user and timestamp cannot be blank. Item ID: " + itemId);
 			}
 		}
 
 		// Execute Database Transaction
-		BatchStatement batchStatement = null;
+		BatchStatement batchStatement = new BatchStatement();
 		List<BoundStatement> boundStatements = getUpdateItemsBoundStatements(itemModelList);
 		if (boundStatements != null) {
 			batchStatement.addAll(boundStatements);
@@ -189,18 +183,12 @@ public class ItemService {
 		for (ItemModel itemModel : itemModelList) {
 			UUID itemId = itemModel.getItemId();
 
-			// Create a new ID, if necessary.
-			if (StringUtils.isEmpty(itemId)) {
-				itemId = UUID.randomUUID();
-				itemModel.setItemId(itemId);
-			}
-
 			// Generate a log buffer.
 			log.info("Deleting item from the database. Item ID: " + itemId);
 		}
 
 		// Execute Database Transaction
-		BatchStatement batchStatement = null;
+		BatchStatement batchStatement = new BatchStatement();
 		List<BoundStatement> boundStatements = getDeleteItemsBoundStatements(itemModelList);
 		if (boundStatements != null) {
 			batchStatement.addAll(boundStatements);

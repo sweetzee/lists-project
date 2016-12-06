@@ -71,7 +71,7 @@ public class ItemController extends BaseController {
 	 * Get items by list ID.
 	 */
 	@RequestMapping(
-			value = "/user/{userIdOrUsername}/lists",
+			value = "/list/{listId}/items",
 			method = RequestMethod.GET,
 			produces = "application/json")
 	public List<ItemModel> getItemsForList(

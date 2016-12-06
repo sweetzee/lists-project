@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -30,26 +31,26 @@ public class UserController extends BaseController {
 	 * using the action parameter.
 	 */
 	@RequestMapping(
-			value = "/user",
+			value = "/users",
 			method = RequestMethod.POST,
 			consumes = "application/json",
 			produces = "application/json")
-	public UserModel createUser(
+	public List<UserModel> createUser(
 			@RequestParam(name = "userId") String createUserId,
 			@RequestParam(name = "action", required = false) String action,
-			@RequestBody UserModel userModel) {
+			@RequestBody List<UserModel> userModelList) {
 
 		if ("UPDATE".equals(action)) {
-			userModel = handleUpdateUserRequest(createUserId, userModel);
+			userModelList = handleUpdateUsersRequest(createUserId, userModelList);
 		}
 		else if ("DELETE".equals(action)) {
-			userModel = handleDeleteUserRequest(createUserId, userModel);
+			userModelList = handleDeleteUsersRequest(createUserId, userModelList);
 		}
 		else {
-			userModel = handleCreateUserRequest(createUserId, userModel);
+			userModelList = handleCreateUsersRequest(createUserId, userModelList);
 		}
 
-		return userModel;
+		return userModelList;
 	}
 
 	/**
@@ -73,48 +74,45 @@ public class UserController extends BaseController {
 	 * Use updateUserCredentials to do that.
 	 */
 	@RequestMapping(
-			value = "/user/{userIdOrUsername}",
+			value = "/users",
 			method = RequestMethod.PUT,
 			consumes = "application/json",
 			produces = "application/json")
-	public UserModel updateUser(
+	public List<UserModel> updateUser(
 			@RequestParam(name = "userId") String updateUserId,
-			@PathVariable(name = "userIdOrUsername") String userIdOrUsername,
-			@RequestBody UserModel userModel) {
+			@RequestBody List<UserModel> userModelList) {
 
-		return handleUpdateUserRequest(updateUserId, userModel);
+		return handleUpdateUsersRequest(updateUserId, userModelList);
 	}
 
 	/**
 	 * Update user credentials (for example, username and password)
 	 */
 	@RequestMapping(
-			value = "/user/{userIdOrUsername}/credentials",
+			value = "/users/credentials",
 			method = RequestMethod.PUT,
 			consumes = "application/json",
 			produces = "application/json")
-	public UserModel updateUserCredentials(
+	public List<UserModel> updateUserCredentials(
 			@RequestParam(name = "userId") String updateUserId,
-			@PathVariable(name = "userIdOrUsername") String userIdOrUsername,
-			@RequestBody UserModel userModel) {
+			@RequestBody List<UserModel> userModelList) {
 
-		return handleUpdateUserCredentialsRequest(updateUserId, userModel);
+		return handleUpdateUserCredentialsRequest(updateUserId, userModelList);
 	}
 
 	/**
 	 * Delete user by ID
 	 */
 	@RequestMapping(
-			value = "/user/{userIdOrUsername}",
+			value = "/users",
 			method = RequestMethod.DELETE,
 			consumes = "application/json",
 			produces = "application/json")
-	public UserModel deleteUser(
+	public List<UserModel> deleteUsers(
 			@RequestParam(name = "userId") String deleteUserId,
-			@PathVariable(name = "userIdOrUsername") String userIdOrUsername,
-			@RequestBody UserModel userModel) {
+			@RequestBody List<UserModel> userModelList) {
 
-		return handleDeleteUserRequest(deleteUserId, userModel);
+		return handleDeleteUsersRequest(deleteUserId, userModelList);
 	}
 
 
@@ -122,19 +120,21 @@ public class UserController extends BaseController {
 	// Helper Methods
 	/////////////////////////////////////////////////
 
-	private UserModel handleCreateUserRequest(String createUserId, UserModel userModel) {
+	private List<UserModel> handleCreateUsersRequest(String createUserId, List<UserModel> userModelList) {
 		log.info("A request has come in to create a user. Request User ID: " + createUserId);
 
-		// Change the create and update fields.
-		userModel.setCreateUser(UUID.fromString(createUserId));
-		userModel.setCreateDate(new Date());
-		userModel.setUpdateUser(UUID.fromString(createUserId));
-		userModel.setUpdateDate(new Date());
+		// Set the create and update fields.
+		for (UserModel userModel : userModelList) {
+			userModel.setCreateUser(UUID.fromString(createUserId));
+			userModel.setCreateDate(new Date());
+			userModel.setUpdateUser(UUID.fromString(createUserId));
+			userModel.setUpdateDate(new Date());
+		}
 
 		// Service call
-		userModel = userService.createUser(userModel);
+		userModelList = userService.createUsers(userModelList);
 
-		return userModel;
+		return userModelList;
 	}
 
 	private UserModel handleGetUserRequest(String readUserId, String userIdOrUsername) {
@@ -147,17 +147,19 @@ public class UserController extends BaseController {
 	 * This function updates the UserModel in the database. It uses the
 	 * function that does not update the username/password.
 	 */
-	private UserModel handleUpdateUserRequest(String updateUserId, UserModel userModel) {
+	private List<UserModel> handleUpdateUsersRequest(String updateUserId, List<UserModel> userModelList) {
 		log.info("A request has come in to update a user. Request User ID: " + updateUserId);
 
-		// Update the create and update fields.
-		userModel.setUpdateUser(UUID.fromString(updateUserId));
-		userModel.setUpdateDate(new Date());
+		// Set the update fields.
+		for (UserModel userModel : userModelList) {
+			userModel.setUpdateUser(UUID.fromString(updateUserId));
+			userModel.setUpdateDate(new Date());
+		}
 
 		// Service call
-		userModel = userService.updateUser(userModel);
+		userModelList = userService.updateUsers(userModelList);
 
-		return userModel;
+		return userModelList;
 	}
 
 	/**
@@ -165,25 +167,27 @@ public class UserController extends BaseController {
 	 * For example, the username and password. To update other fields,
 	 * use updateUser().
 	 */
-	private UserModel handleUpdateUserCredentialsRequest(String updateUserId, UserModel userModel) {
+	private List<UserModel> handleUpdateUserCredentialsRequest(String updateUserId, List<UserModel> userModelList) {
 		log.info("A request has come in to update a user. Request User ID: " + updateUserId);
 
-		// Update the create and update fields.
-		userModel.setUpdateUser(UUID.fromString(updateUserId));
-		userModel.setUpdateDate(new Date());
+		// Set the update fields.
+		for (UserModel userModel : userModelList) {
+			userModel.setUpdateUser(UUID.fromString(updateUserId));
+			userModel.setUpdateDate(new Date());
+		}
 
 		// Service call
-		userModel = userService.updateUserCredentials(userModel);
+		userModelList = userService.updateUserCredentials(userModelList);
 
-		return userModel;
+		return userModelList;
 	}
 
-	private UserModel handleDeleteUserRequest(String deleteUserId, UserModel userModel) {
+	private List<UserModel> handleDeleteUsersRequest(String deleteUserId, List<UserModel> userModelList) {
 		log.info("A request has come in to delete a user. Request User ID: " + deleteUserId);
 
 		// Service call
-		userModel = userService.deleteUser(userModel);
+		userModelList = userService.deleteUsers(userModelList);
 
-		return userModel;
+		return userModelList;
 	}
 }

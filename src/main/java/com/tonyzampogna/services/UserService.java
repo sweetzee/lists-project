@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -38,61 +40,58 @@ public class UserService {
 	/**
 	 * Create
 	 */
-	public UserModel createUser(UserModel userModel) {
-		UUID userId = userModel.getUserId();
-		String username = userModel.getUsername();
-		String password = userModel.getPassword();
+	public List<UserModel> createUsers(List<UserModel> userModelList) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		// Create a new user ID, if necessary.
-		if (StringUtils.isEmpty(userId)) {
-			userId = UUID.randomUUID();
-			userModel.setUserId(userId);
+		// For each UserModel...
+		for (UserModel userModel : userModelList) {
+			UUID userId = userModel.getUserId();
+			String username = userModel.getUsername();
+			String password = userModel.getPassword();
+
+			// Create a new ID, if necessary.
+			if (StringUtils.isEmpty(userId)) {
+				userId = UUID.randomUUID();
+				userModel.setUserId(userId);
+			}
+
+			// Generate a log buffer.
+			log.info("Creating user in the database. User ID: " + userId);
+
+			// Make sure our logging fields are not empty.
+			if (StringUtils.isEmpty(userModel.getCreateUser()) ||
+				StringUtils.isEmpty(userModel.getCreateDate()) ||
+				StringUtils.isEmpty(userModel.getUpdateUser()) ||
+				StringUtils.isEmpty(userModel.getUpdateDate())) {
+				throw new RuntimeException("The create and update user and timestamp cannot be blank. User ID: " + userId + ". Username: " + username);
+			}
+
+			// Make sure the username does not already exist.
+			int count = getUserCountByUsername(username);
+			if (count > 0) {
+				throw new RuntimeException("Username already exists in the database. User ID: " + userId + ". Username: " + username);
+			}
+
+			// Username must not be blank.
+			if (StringUtils.isEmpty(username)) {
+				throw new RuntimeException("Username must not be blank during creation. User ID: " + userId + ". Username: " + username);
+			}
+
+			// Password must not be blank.
+			if (StringUtils.isEmpty(password)) {
+				throw new RuntimeException("Password must not be blank during creation. User ID: " + userId + ". Username: " + username);
+			}
 		}
 
-		log.info("Creating user in the database. User ID: " + userId + ". Username: " + username);
-
-		// Make sure the username does not already exist.
-		int count = getUserCountByUsername(username);
-		if (count > 0) {
-			throw new RuntimeException("Username already exists in the database. User ID: " + userId + ". Username: " + username);
+		// Execute Database Transaction
+		BatchStatement batchStatement = new BatchStatement();
+		List<BoundStatement> boundStatements = getCreateUsersBoundStatements(userModelList);
+		if (boundStatements != null) {
+			batchStatement.addAll(boundStatements);
+			session.execute(batchStatement);
 		}
 
-		// Username must not be blank.
-		if (StringUtils.isEmpty(username)) {
-			throw new RuntimeException("Username must not be blank during creation. User ID: " + userId + ". Username: " + username);
-		}
-
-		// Password must not be blank.
-		if (StringUtils.isEmpty(password)) {
-			throw new RuntimeException("Password must not be blank during creation. User ID: " + userId + ". Username: " + username);
-		}
-
-		// Make sure our logging fields are not empty.
-		if (StringUtils.isEmpty(userModel.getCreateUser()) ||
-			StringUtils.isEmpty(userModel.getCreateDate()) ||
-			StringUtils.isEmpty(userModel.getUpdateUser()) ||
-			StringUtils.isEmpty(userModel.getUpdateDate())) {
-			throw new RuntimeException("The create and update user and timestamp cannot be blank. User ID: " + userId + ". Username: " + username);
-		}
-
-		// Create the PreparedStatement if it does not exist.
-		if (PS_CREATE_USER == null) {
-			PS_CREATE_USER = session.prepare(
-				"INSERT INTO users (user_id, username, password, first_name, last_name, email_address, create_user, create_date, update_user, update_date) " +
-				"VALUES (:userId, :username, :password, :firstName, :lastName, :emailAddress, :createUser, :createDate, :updateUser, :updateDate)");
-		}
-
-		BoundStatement boundStatement = PS_CREATE_USER.bind();
-		updateBoundStatement(boundStatement, userModel);
-		boundStatement.setString("username", userModel.getUsername());
-		boundStatement.setString("password", userModel.getPassword());
-		boundStatement.setUUID("createUser", userModel.getCreateUser());
-		boundStatement.setTimestamp("createDate", userModel.getCreateDate());
-
-		session.execute(boundStatement);
-
-		return getUserById(userId);
+		return userModelList;
 	}
 
 	/**
@@ -111,10 +110,12 @@ public class UserService {
 				"FROM users WHERE user_id = :userId");
 		}
 
+		// Execute Database Transaction
 		BoundStatement boundStatement = PS_GET_USER_BY_USERID.bind();
 		boundStatement.setUUID("userId", userId);
-
 		ResultSet resultSet = session.execute(boundStatement);
+
+		// Transform Results
 		Row row = resultSet.one();
 		if (row != null) {
 			userModel = transformRowToUser(row);
@@ -139,10 +140,12 @@ public class UserService {
 				"FROM users WHERE username = :username");
 		}
 
+		// Execute Database Transaction
 		BoundStatement boundStatement = PS_GET_USER_BY_USERNAME.bind();
 		boundStatement.setString("username", username);
-
 		ResultSet resultSet = session.execute(boundStatement);
+
+		// Transform Results
 		Row row = resultSet.one();
 		if (row != null) {
 			userModel = transformRowToUser(row);
@@ -159,37 +162,33 @@ public class UserService {
 	 * and password). Use the updateUserCredentials() function
 	 * to do that.
 	 */
-	public UserModel updateUser(UserModel userModel) {
-		UUID userId = userModel.getUserId();
-		String username = userModel.getUsername();
+	public List<UserModel> updateUsers(List<UserModel> userModelList) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		log.info("Updating user in the database. User ID: " + userId + ". Username: " + username);
+		// For each UserModel...
+		for (UserModel userModel : userModelList) {
+			UUID userId = userModel.getUserId();
+			String username = userModel.getUsername();
 
-		// Make sure our logging fields are not empty.
-		if (StringUtils.isEmpty(userModel.getUpdateUser()) ||
-			StringUtils.isEmpty(userModel.getUpdateDate())) {
-			throw new RuntimeException("The update user and timestamp cannot be blank. User ID: " + userId + ". Username: " + username);
+			// Generate a log buffer.
+			log.info("Updating user in the database. User ID: " + userId + ". Username: " + username);
+
+			// Make sure our logging fields are not empty.
+			if (StringUtils.isEmpty(userModel.getUpdateUser()) ||
+				StringUtils.isEmpty(userModel.getUpdateDate())) {
+				throw new RuntimeException("The update user and timestamp cannot be blank. User ID: " + userId + ". Username: " + username);
+			}
 		}
 
-		// Create the PreparedStatement if it does not exist.
-		if (PS_UPDATE_USER_BY_USERID == null) {
-			PS_UPDATE_USER_BY_USERID = session.prepare(
-				"UPDATE users SET " +
-				"first_name = :firstName, " +
-				"last_name = :lastName, " +
-				"email_address = :emailAddress, " +
-				"update_user = :updateUser, " +
-				"update_date = :updateDate " +
-				"WHERE user_id = :userId");
+		// Execute Database Transaction
+		BatchStatement batchStatement = new BatchStatement();
+		List<BoundStatement> boundStatements = getUpdateUsersBoundStatements(userModelList);
+		if (boundStatements != null) {
+			batchStatement.addAll(boundStatements);
+			session.execute(batchStatement);
 		}
 
-		BoundStatement boundStatement = PS_UPDATE_USER_BY_USERID.bind();
-		updateBoundStatement(boundStatement, userModel);
-
-		session.execute(boundStatement);
-
-		return getUserById(userId);
+		return userModelList;
 	}
 
 	/**
@@ -198,43 +197,49 @@ public class UserService {
 	 * This function updates only the user credentials. It makes sure
 	 * to check to see if the username exists (only if it's changed).
 	 */
-	public UserModel updateUserCredentials(UserModel userModel) {
-		UUID userId = userModel.getUserId();
-		String username = userModel.getUsername();
-		UserModel currentUserModel = getUserById(userModel.getUserId());
+	public List<UserModel> updateUserCredentials(List<UserModel> userModelList) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		// If no user exists, do nothing.
-		if (currentUserModel == null) {
-			return null;
-		}
+		// For each UserModel...
+		for (UserModel userModel : userModelList) {
+			UUID userId = userModel.getUserId();
+			String username = userModel.getUsername();
 
-		log.info("Updating user credentials in the database. User ID: " + userId + ". Username: " + username);
+			UserModel currentUserModel = getUserById(userModel.getUserId());
 
-		// Check if the username is changing.
-		if (StringUtils.hasLength(username) && !username.equals(currentUserModel.getUsername())) {
-			// The username is getting changed.
-			// Check to see if it exists.
-			int count = getUserCountByUsername(username);
-			if (count > 0) {
-				throw new RuntimeException("Username already exists in the database. User ID: " + userId + ". Username: " + username);
+			// Generate a log buffer.
+			log.info("Updating user in the database. User ID: " + userId + ". Username: " + username);
+
+			// If no user exists, throw an error.
+			if (currentUserModel == null) {
+				throw new RuntimeException("User does not exist. User ID: " + userId + ". Username: " + username);
 			}
-		}
-		else {
-			// Set the username to the current username.
-			userModel.setUsername(currentUserModel.getUsername());
-		}
 
-		// Check if the password is changing.
-		if (StringUtils.isEmpty(userModel.getPassword())) {
-			// Password cannot be empty. Set the password to the current password.
-			userModel.setPassword(currentUserModel.getPassword());
-		}
+			// Check if the username is changing.
+			if (StringUtils.hasLength(username) && !username.equals(currentUserModel.getUsername())) {
+				// The username is getting changed.
+				// Check to see if it exists.
+				int count = getUserCountByUsername(username);
+				if (count > 0) {
+					throw new RuntimeException("Username already exists in the database. User ID: " + userId + ". Username: " + username);
+				}
+			}
+			else {
+				// Set the username to the current username.
+				userModel.setUsername(currentUserModel.getUsername());
+			}
 
-		// Make sure our logging fields are not empty.
-		if (StringUtils.isEmpty(userModel.getUpdateUser()) ||
-			StringUtils.isEmpty(userModel.getUpdateDate())) {
-			throw new RuntimeException("The update user and timestamp cannot be blank. User ID: " + userId + ". Username: " + username);
+			// Check if the password is changing.
+			if (StringUtils.isEmpty(userModel.getPassword())) {
+				// Password cannot be empty. Set the password to the current password.
+				userModel.setPassword(currentUserModel.getPassword());
+			}
+
+			// Make sure our logging fields are not empty.
+			if (StringUtils.isEmpty(userModel.getUpdateUser()) ||
+				StringUtils.isEmpty(userModel.getUpdateDate())) {
+				throw new RuntimeException("The update user and timestamp cannot be blank. User ID: " + userId + ". Username: " + username);
+			}
 		}
 
 		// Create the PreparedStatement if it does not exist.
@@ -248,27 +253,151 @@ public class UserService {
 				"WHERE user_id = :userId");
 		}
 
-		BoundStatement boundStatement = PS_UPDATE_USER_CREDENTIALS_BY_USERID.bind();
-		boundStatement.setUUID("userId", userModel.getUserId());
-		boundStatement.setString("username", userModel.getUsername());
-		boundStatement.setString("password", userModel.getPassword());
-		boundStatement.setUUID("updateUser", userModel.getUpdateUser());
-		boundStatement.setTimestamp("updateDate", userModel.getUpdateDate());
+		// Execute Database Transaction
+		BatchStatement batchStatement = new BatchStatement();
+		List<BoundStatement> boundStatements = getUpdateUserCredentialsBoundStatements(userModelList);
+		if (boundStatements != null) {
+			batchStatement.addAll(boundStatements);
+			session.execute(batchStatement);
+		}
 
-		session.execute(boundStatement);
-
-		return getUserById(userId);
+		return userModelList;
 	}
 
 	/**
 	 * Delete
 	 */
-	public UserModel deleteUser(UserModel userModel) {
-		UUID userId = userModel.getUserId();
-		String username = userModel.getUsername();
+	public List<UserModel> deleteUsers(List<UserModel> userModelList) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
-		log.info("Deleting user in the database. User ID: " + userId + ". Username: " + username);
+		// For each UserModel...
+		for (UserModel userModel : userModelList) {
+			UUID userId = userModel.getUserId();
+
+			// Generate a log buffer.
+			log.info("Deleting list from the database. User ID: " + userId);
+		}
+
+		// Execute Database Transaction
+		BatchStatement batchStatement = new BatchStatement();
+		List<BoundStatement> boundStatements = getDeleteUsersBoundStatements(userModelList);
+		if (boundStatements != null) {
+			batchStatement.addAll(boundStatements);
+			session.execute(batchStatement);
+		}
+
+		return userModelList;
+	}
+
+
+	/////////////////////////////////////////////////
+	// Bound Statement Methods
+	/////////////////////////////////////////////////
+
+	/**
+	 * Return the bound statements to create a list of users.
+	 */
+	public List<BoundStatement> getCreateUsersBoundStatements(List<UserModel> userModelList) {
+		List<BoundStatement> boundStatements = null;
+		Session session = listsDatabaseSessionFactory.getSession();
+
+		// Create the PreparedStatement if it does not exist.
+		if (PS_CREATE_USER == null) {
+			PS_CREATE_USER = session.prepare(
+				"INSERT INTO users (user_id, username, password, first_name, last_name, email_address, create_user, create_date, update_user, update_date) " +
+				"VALUES (:userId, :username, :password, :firstName, :lastName, :emailAddress, :createUser, :createDate, :updateUser, :updateDate)");
+		}
+
+		if (userModelList != null) {
+			boundStatements = new ArrayList<BoundStatement>();
+
+			for (UserModel userModel : userModelList) {
+				BoundStatement boundStatement = PS_CREATE_USER.bind();
+				updateBoundStatement(boundStatement, userModel);
+				boundStatement.setString("username", userModel.getUsername());
+				boundStatement.setString("password", userModel.getPassword());
+				boundStatement.setUUID("createUser", userModel.getCreateUser());
+				boundStatement.setTimestamp("createDate", userModel.getCreateDate());
+				boundStatements.add(boundStatement);
+			}
+		}
+
+		return boundStatements;
+	}
+
+	/**
+	 * Return the bound statements to update a list of items.
+	 */
+	public List<BoundStatement> getUpdateUsersBoundStatements(List<UserModel> userModelList) {
+		List<BoundStatement> boundStatements = null;
+		Session session = listsDatabaseSessionFactory.getSession();
+
+		// Create the PreparedStatement if it does not exist.
+		if (PS_UPDATE_USER_BY_USERID == null) {
+			PS_UPDATE_USER_BY_USERID = session.prepare(
+				"UPDATE users SET " +
+				"first_name = :firstName, " +
+				"last_name = :lastName, " +
+				"email_address = :emailAddress, " +
+				"update_user = :updateUser, " +
+				"update_date = :updateDate " +
+				"WHERE user_id = :userId");
+		}
+
+		if (userModelList != null) {
+			boundStatements = new ArrayList<BoundStatement>();
+
+			for (UserModel userModel : userModelList) {
+				BoundStatement boundStatement = PS_UPDATE_USER_BY_USERID.bind();
+				updateBoundStatement(boundStatement, userModel);
+				boundStatements.add(boundStatement);
+			}
+		}
+
+		return boundStatements;
+	}
+
+	/**
+	 * Return the bound statements to update a list of items.
+	 */
+	public List<BoundStatement> getUpdateUserCredentialsBoundStatements(List<UserModel> userModelList) {
+		List<BoundStatement> boundStatements = null;
+		Session session = listsDatabaseSessionFactory.getSession();
+
+		// Create the PreparedStatement if it does not exist.
+		if (PS_UPDATE_USER_CREDENTIALS_BY_USERID == null) {
+			PS_UPDATE_USER_CREDENTIALS_BY_USERID = session.prepare(
+				"UPDATE users SET " +
+				"username = :username, " +
+				"password = :password, " +
+				"update_user = :updateUser, " +
+				"update_date = :updateDate " +
+				"WHERE user_id = :userId");
+		}
+
+		if (userModelList != null) {
+			boundStatements = new ArrayList<BoundStatement>();
+
+			for (UserModel userModel : userModelList) {
+				BoundStatement boundStatement = PS_UPDATE_USER_CREDENTIALS_BY_USERID.bind();
+				boundStatement.setUUID("userId", userModel.getUserId());
+				boundStatement.setString("username", userModel.getUsername());
+				boundStatement.setString("password", userModel.getPassword());
+				boundStatement.setUUID("updateUser", userModel.getUpdateUser());
+				boundStatement.setTimestamp("updateDate", userModel.getUpdateDate());
+				boundStatements.add(boundStatement);
+			}
+		}
+
+		return boundStatements;
+	}
+
+	/**
+	 * Return the bound statements to delete a list of items.
+	 */
+	public List<BoundStatement> getDeleteUsersBoundStatements(List<UserModel> userModelList) {
+		List<BoundStatement> boundStatements = null;
+		Session session = listsDatabaseSessionFactory.getSession();
 
 		// Create the PreparedStatement if it does not exist.
 		if (PS_DELETE_USER_BY_USERID == null) {
@@ -276,12 +405,17 @@ public class UserService {
 				"DELETE FROM users WHERE user_id = :userId");
 		}
 
-		BoundStatement boundStatement = PS_DELETE_USER_BY_USERID.bind();
-		boundStatement.setUUID("userId", userId);
+		if (userModelList != null) {
+			boundStatements = new ArrayList<BoundStatement>();
 
-		session.execute(boundStatement);
+			for (UserModel userModel : userModelList) {
+				BoundStatement boundStatement = PS_DELETE_USER_BY_USERID.bind();
+				updateBoundStatement(boundStatement, userModel);
+				boundStatements.add(boundStatement);
+			}
+		}
 
-		return getUserById(userId);
+		return boundStatements;
 	}
 
 

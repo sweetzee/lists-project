@@ -55,10 +55,10 @@ public class ListController extends BaseController {
 	}
 
 	/**
-	 * Create a new list for a user.
+	 * Create a new lists for a user.
 	 */
 	@RequestMapping(
-			value = "/user/{userIdOrUsername}/list",
+			value = "/user/{userIdOrUsername}/lists",
 			method = RequestMethod.POST,
 			consumes = "application/json",
 			produces = "application/json")
