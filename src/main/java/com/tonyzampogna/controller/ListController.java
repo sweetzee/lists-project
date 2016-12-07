@@ -11,6 +11,15 @@ import java.util.List;
 import java.util.UUID;
 
 
+/**
+ * Handle requests from HTTP.
+ *
+ * The controller:
+ * 	- Checks to see if the user has permissions to perform the operation.
+ * 	- Validates the input to make sure it's clean.
+ * 	- Any other business logic.
+ * 	- Sends appropriate error messages back, if necessary.
+ */
 @RestController
 public class ListController extends BaseController {
 	private static final Logger log = LoggerFactory.getLogger(UserController.class);
@@ -74,7 +83,7 @@ public class ListController extends BaseController {
 	}
 
 	/**
-	 * Get List (by list ID).
+	 * Get List (by list ID)
 	 */
 	@RequestMapping(
 			value = "/list/{listId}",
@@ -88,7 +97,7 @@ public class ListController extends BaseController {
 	}
 
 	/**
-	 * Get Lists (by user ID or by username).
+	 * Get Lists (by user ID or by username)
 	 */
 	@RequestMapping(
 			value = "/user/{userIdOrUsername}/lists",
@@ -214,7 +223,7 @@ public class ListController extends BaseController {
 			userId = userModel.getUserId();
 		}
 
-		listModels = listService.getLists(userId);
+		listModels = listService.getListsByUserId(userId);
 
 		return listModels;
 	}

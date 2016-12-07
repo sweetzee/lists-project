@@ -10,6 +10,15 @@ import java.util.List;
 import java.util.UUID;
 
 
+/**
+ * Handle requests from HTTP.
+ *
+ * The controller:
+ * 	- Checks to see if the user has permissions to perform the operation.
+ * 	- Validates the input to make sure it's clean.
+ * 	- Any other business logic.
+ * 	- Sends appropriate error messages back, if necessary.
+ */
 @RestController
 public class ItemController extends BaseController {
 	private static final Logger log = LoggerFactory.getLogger(ItemController.class);
@@ -20,10 +29,7 @@ public class ItemController extends BaseController {
 	/////////////////////////////////////////////////
 
 	/**
-	 * Create new items.
-	 *
-	 * It is possible to update or delete a list by ID as well
-	 * using the action parameter.
+	 * Create Items (Update, Delete as well)
 	 */
 	@RequestMapping(
 			value = "/items",
@@ -49,7 +55,7 @@ public class ItemController extends BaseController {
 	}
 
 	/**
-	 * Get item by item ID.
+	 * Get Item (by item ID)
 	 */
 	@RequestMapping(
 			value = "/item/{itemId}",
@@ -63,7 +69,7 @@ public class ItemController extends BaseController {
 	}
 
 	/**
-	 * Get items by list ID.
+	 * Get Items (by item ID)
 	 */
 	@RequestMapping(
 			value = "/list/{listId}/items",
@@ -77,7 +83,7 @@ public class ItemController extends BaseController {
 	}
 
 	/**
-	 * Update items by ID
+	 * Update Items
 	 */
 	@RequestMapping(
 			value = "/items",
@@ -92,7 +98,7 @@ public class ItemController extends BaseController {
 	}
 
 	/**
-	 * Delete items by ID
+	 * Delete Items
 	 */
 	@RequestMapping(
 			value = "/items",

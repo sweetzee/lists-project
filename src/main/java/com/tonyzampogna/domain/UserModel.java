@@ -7,9 +7,25 @@ import java.util.UUID;
  * User Model
  */
 public class UserModel {
+	public enum AuthorizationLevel {
+		ADMIN("ADMIN"),
+		USER("USER");
+
+		private final String value;
+
+		AuthorizationLevel(String value) {
+			this.value = value;
+		}
+
+		public String toString() {
+			return name();
+		}
+	};
+
 	private UUID userId = null;
 	private String username = null;
 	private String password = null;
+	private AuthorizationLevel authorizationLevel = null;
 	private String firstName = null;
 	private String lastName = null;
 	private String emailAddress = null;
@@ -41,6 +57,14 @@ public class UserModel {
 
 	public void setPassword(String password) {
 		this.password = password;
+	}
+
+	public AuthorizationLevel getAuthorizationLevel() {
+		return authorizationLevel;
+	}
+
+	public void setAuthorizationLevel(AuthorizationLevel authorizationLevel) {
+		this.authorizationLevel = authorizationLevel;
 	}
 
 	public String getFirstName() {

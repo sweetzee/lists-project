@@ -15,6 +15,13 @@ import java.util.UUID;
 
 /**
  * This class contains the methods for operating on ItemModel.
+ *
+ * The service handles safety checks that pertain to the database.
+ * For example, making sure that constraints are met (like NOT NULL),
+ * or checking that duplicate data is not getting generated.
+ *
+ * Whether a record can be created, read, updated, or deleted is
+ * handled at the controller level.
  */
 @Service
 public class ItemService {
@@ -36,13 +43,13 @@ public class ItemService {
 	/////////////////////////////////////////////////
 
 	/**
-	 * Create
+	 * Create Items
 	 */
-	public List<ItemModel> createItems(List<ItemModel> itemModelList) {
+	public List<ItemModel> createItems(List<ItemModel> itemModels) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
 		// For each ItemModel...
-		for (ItemModel itemModel : itemModelList) {
+		for (ItemModel itemModel : itemModels) {
 			UUID itemId = itemModel.getItemId();
 
 			// Create a new ID, if necessary.
@@ -65,19 +72,19 @@ public class ItemService {
 
 		// Execute Database Transaction
 		BatchStatement batchStatement = new BatchStatement();
-		List<BoundStatement> boundStatements = getCreateItemsBoundStatements(itemModelList);
+		List<BoundStatement> boundStatements = getCreateItemsBoundStatements(itemModels);
 		if (boundStatements != null) {
 			batchStatement.addAll(boundStatements);
-			session.execute(batchStatement);
 		}
+		session.execute(batchStatement);
 
-		return itemModelList;
+		return itemModels;
 	}
 
 	/**
-	 * Read (by itemId)
+	 * Read Item (by itemId)
 	 */
-	public ItemModel getItemById(UUID itemId) {
+	public ItemModel getItem(UUID itemId) {
 		ItemModel itemModel = null;
 		Session session = listsDatabaseSessionFactory.getSession();
 
@@ -108,7 +115,7 @@ public class ItemService {
 	 * Read (by listId)
 	 */
 	public List<ItemModel> getItemsByListId(UUID listId) {
-		List<ItemModel> itemModelList = null;
+		List<ItemModel> itemModels = null;
 		Session session = listsDatabaseSessionFactory.getSession();
 
 		log.info("Reading items from the database for list. List ID: " + listId);
@@ -135,21 +142,21 @@ public class ItemService {
 
 			if (row != null) {
 				ItemModel itemModel = transformRowToItem(row);
-				itemModelList.add(itemModel);
+				itemModels.add(itemModel);
 			}
 		}
 
-		return itemModelList;
+		return itemModels;
 	}
 
 	/**
 	 * Update
 	 */
-	public List<ItemModel> updateItems(List<ItemModel> itemModelList) {
+	public List<ItemModel> updateItems(List<ItemModel> itemModels) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
 		// For each ItemModel...
-		for (ItemModel itemModel : itemModelList) {
+		for (ItemModel itemModel : itemModels) {
 			UUID itemId = itemModel.getItemId();
 
 			// Generate a log buffer.
@@ -164,23 +171,23 @@ public class ItemService {
 
 		// Execute Database Transaction
 		BatchStatement batchStatement = new BatchStatement();
-		List<BoundStatement> boundStatements = getUpdateItemsBoundStatements(itemModelList);
+		List<BoundStatement> boundStatements = getUpdateItemsBoundStatements(itemModels);
 		if (boundStatements != null) {
 			batchStatement.addAll(boundStatements);
-			session.execute(batchStatement);
 		}
+		session.execute(batchStatement);
 
-		return itemModelList;
+		return itemModels;
 	}
 
 	/**
 	 * Delete
 	 */
-	public List<ItemModel> deleteItems(List<ItemModel> itemModelList) {
+	public List<ItemModel> deleteItems(List<ItemModel> itemModels) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
 		// For each ItemModel...
-		for (ItemModel itemModel : itemModelList) {
+		for (ItemModel itemModel : itemModels) {
 			UUID itemId = itemModel.getItemId();
 
 			// Generate a log buffer.
@@ -189,13 +196,13 @@ public class ItemService {
 
 		// Execute Database Transaction
 		BatchStatement batchStatement = new BatchStatement();
-		List<BoundStatement> boundStatements = getDeleteItemsBoundStatements(itemModelList);
+		List<BoundStatement> boundStatements = getDeleteItemsBoundStatements(itemModels);
 		if (boundStatements != null) {
 			batchStatement.addAll(boundStatements);
-			session.execute(batchStatement);
 		}
+		session.execute(batchStatement);
 
-		return itemModelList;
+		return itemModels;
 	}
 
 
@@ -206,7 +213,7 @@ public class ItemService {
 	/**
 	 * Return the bound statements to create a list of items.
 	 */
-	public List<BoundStatement> getCreateItemsBoundStatements(List<ItemModel> itemModelList) {
+	public List<BoundStatement> getCreateItemsBoundStatements(List<ItemModel> itemModels) {
 		List<BoundStatement> boundStatements = null;
 		Session session = listsDatabaseSessionFactory.getSession();
 
@@ -217,10 +224,10 @@ public class ItemService {
 				"VALUES (:itemId, :listId, :itemName, :createUser, :createDate, :updateUser, :updateDate)");
 		}
 
-		if (itemModelList != null) {
+		if (itemModels != null) {
 			boundStatements = new ArrayList<BoundStatement>();
 
-			for (ItemModel itemModel : itemModelList) {
+			for (ItemModel itemModel : itemModels) {
 				BoundStatement boundStatement = PS_CREATE_ITEM.bind();
 				updateBoundStatement(boundStatement, itemModel);
 				boundStatements.add(boundStatement);
@@ -233,7 +240,7 @@ public class ItemService {
 	/**
 	 * Return the bound statements to update a list of items.
 	 */
-	public List<BoundStatement> getUpdateItemsBoundStatements(List<ItemModel> itemModelList) {
+	public List<BoundStatement> getUpdateItemsBoundStatements(List<ItemModel> itemModels) {
 		List<BoundStatement> boundStatements = null;
 		Session session = listsDatabaseSessionFactory.getSession();
 
@@ -251,10 +258,10 @@ public class ItemService {
 				"WHERE item_id = :itemId");
 		}
 
-		if (itemModelList != null) {
+		if (itemModels != null) {
 			boundStatements = new ArrayList<BoundStatement>();
 
-			for (ItemModel itemModel : itemModelList) {
+			for (ItemModel itemModel : itemModels) {
 				BoundStatement boundStatement = PS_UPDATE_ITEM_BY_ITEMID.bind();
 				updateBoundStatement(boundStatement, itemModel);
 				boundStatements.add(boundStatement);
@@ -267,7 +274,7 @@ public class ItemService {
 	/**
 	 * Return the bound statements to delete a list of items.
 	 */
-	public List<BoundStatement> getDeleteItemsBoundStatements(List<ItemModel> itemModelList) {
+	public List<BoundStatement> getDeleteItemsBoundStatements(List<ItemModel> itemModels) {
 		List<BoundStatement> boundStatements = null;
 		Session session = listsDatabaseSessionFactory.getSession();
 
@@ -277,10 +284,10 @@ public class ItemService {
 				"DELETE FROM items WHERE item_id = :itemId");
 		}
 
-		if (itemModelList != null) {
+		if (itemModels != null) {
 			boundStatements = new ArrayList<BoundStatement>();
 
-			for (ItemModel itemModel : itemModelList) {
+			for (ItemModel itemModel : itemModels) {
 				BoundStatement boundStatement = PS_DELETE_ITEM_BY_ITEMID.bind();
 				updateBoundStatement(boundStatement, itemModel);
 				boundStatements.add(boundStatement);

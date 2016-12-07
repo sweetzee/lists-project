@@ -16,6 +16,13 @@ import java.util.*;
 
 /**
  * This class contains the methods for operating on ListModels.
+ *
+ * The service handles safety checks that pertain to the database.
+ * For example, making sure that constraints are met (like NOT NULL),
+ * or checking that duplicate data is not getting generated.
+ *
+ * Whether a record can be created, read, updated, or deleted is
+ * handled at the controller level.
  */
 @Service
 public class ListService {
@@ -60,7 +67,7 @@ public class ListService {
 				listModel.setListId(listId);
 			}
 
-			// If no privilege is set, make them the owner.
+			// Make sure the authorization level is not null.
 			if (StringUtils.isEmpty(listModel.getAuthorizationLevel())) {
 				listModel.setAuthorizationLevel(UserListModel.AuthorizationLevel.OWNER);
 			}
@@ -80,7 +87,9 @@ public class ListService {
 		// Execute Database Transaction
 		BatchStatement batchStatement = new BatchStatement();
 		List<BoundStatement> boundStatements = getCreateListsBoundStatements(userId, listModels);
-		batchStatement.addAll(boundStatements);
+		if (boundStatements != null) {
+			batchStatement.addAll(boundStatements);
+		}
 		session.execute(batchStatement);
 
 		return listModels;
@@ -119,12 +128,12 @@ public class ListService {
 	/**
 	 * Read Lists (by userId)
 	 */
-	public List<ListModel> getLists(UUID userId) {
+	public List<ListModel> getListsByUserId(UUID userId) {
 		log.info("Reading lists from the database for user. User ID: " + userId);
 
 		// Get a list of all of the lists
 		// the user has permission to.
-		List<UserListModel> userListModels = getUserLists(userId);
+		List<UserListModel> userListModels = getUserListsByUserId(userId);
 
 		// Get the lists using an array of
 		// list IDs from the previous query.
@@ -136,7 +145,7 @@ public class ListService {
 	/**
 	 * Read User Lists (by userId)
 	 */
-	public List<UserListModel> getUserLists(UUID userId) {
+	public List<UserListModel> getUserListsByUserId(UUID userId) {
 		Session session = listsDatabaseSessionFactory.getSession();
 
 		// Create the PreparedStatement if it does not exist.
@@ -218,7 +227,9 @@ public class ListService {
 		// Execute Database Transaction
 		BatchStatement batchStatement = new BatchStatement();
 		List<BoundStatement> boundStatements = getUpdateListsBoundStatements(userId, listModels);
-		batchStatement.addAll(boundStatements);
+		if (boundStatements != null) {
+			batchStatement.addAll(boundStatements);
+		}
 		session.execute(batchStatement);
 
 		return listModels;
@@ -248,7 +259,9 @@ public class ListService {
 		// Execute Database Transaction
 		BatchStatement batchStatement = new BatchStatement();
 		List<BoundStatement> boundStatements = getDeleteListsBoundStatements(userId, listModels);
-		batchStatement.addAll(boundStatements);
+		if (boundStatements != null) {
+			batchStatement.addAll(boundStatements);
+		}
 		session.execute(batchStatement);
 
 		return listModels;
@@ -481,7 +494,7 @@ public class ListService {
 
 	private UserListModel getUserListByListId(UUID userId, UUID listId) {
 		UserListModel userListModel = null;
-		List<UserListModel> userListModels = getUserLists(userId);
+		List<UserListModel> userListModels = getUserListsByUserId(userId);
 		for (UserListModel model : userListModels) {
 			if (listId != null && listId.equals(model.getListId())) {
 				userListModel = model;

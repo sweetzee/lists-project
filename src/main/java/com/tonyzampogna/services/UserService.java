@@ -15,6 +15,13 @@ import java.util.UUID;
 
 /**
  * This class contains the methods for operating on UserModels.
+ *
+ * The service handles safety checks that pertain to the database.
+ * For example, making sure that constraints are met (like NOT NULL),
+ * or checking that duplicate data is not getting generated.
+ *
+ * Whether a record can be created, read, updated, or deleted is
+ * handled at the controller level.
  */
 @Service
 public class UserService {
@@ -58,12 +65,9 @@ public class UserService {
 			// Generate a log buffer.
 			log.info("Creating user in the database. User ID: " + userId);
 
-			// Make sure our logging fields are not empty.
-			if (StringUtils.isEmpty(userModel.getCreateUser()) ||
-				StringUtils.isEmpty(userModel.getCreateDate()) ||
-				StringUtils.isEmpty(userModel.getUpdateUser()) ||
-				StringUtils.isEmpty(userModel.getUpdateDate())) {
-				throw new RuntimeException("The create and update user and timestamp cannot be blank. User ID: " + userId + ". Username: " + username);
+			// Make sure the authorization level is not null.
+			if (StringUtils.isEmpty(userModel.getAuthorizationLevel())) {
+				userModel.setAuthorizationLevel(UserModel.AuthorizationLevel.USER);
 			}
 
 			// Make sure the username does not already exist.
@@ -81,6 +85,14 @@ public class UserService {
 			if (StringUtils.isEmpty(password)) {
 				throw new RuntimeException("Password must not be blank during creation. User ID: " + userId + ". Username: " + username);
 			}
+
+			// Make sure our logging fields are not empty.
+			if (StringUtils.isEmpty(userModel.getCreateUser()) ||
+				StringUtils.isEmpty(userModel.getCreateDate()) ||
+				StringUtils.isEmpty(userModel.getUpdateUser()) ||
+				StringUtils.isEmpty(userModel.getUpdateDate())) {
+				throw new RuntimeException("The create and update user and timestamp cannot be blank. User ID: " + userId + ". Username: " + username);
+			}
 		}
 
 		// Execute Database Transaction
@@ -88,8 +100,8 @@ public class UserService {
 		List<BoundStatement> boundStatements = getCreateUsersBoundStatements(userModelList);
 		if (boundStatements != null) {
 			batchStatement.addAll(boundStatements);
-			session.execute(batchStatement);
 		}
+		session.execute(batchStatement);
 
 		return userModelList;
 	}
@@ -185,8 +197,8 @@ public class UserService {
 		List<BoundStatement> boundStatements = getUpdateUsersBoundStatements(userModelList);
 		if (boundStatements != null) {
 			batchStatement.addAll(boundStatements);
-			session.execute(batchStatement);
 		}
+		session.execute(batchStatement);
 
 		return userModelList;
 	}
@@ -209,6 +221,11 @@ public class UserService {
 
 			// Generate a log buffer.
 			log.info("Updating user in the database. User ID: " + userId + ". Username: " + username);
+
+			// Make sure the authorization level is not null.
+			if (StringUtils.isEmpty(userModel.getAuthorizationLevel())) {
+				userModel.setAuthorizationLevel(UserModel.AuthorizationLevel.USER);
+			}
 
 			// If no user exists, throw an error.
 			if (currentUserModel == null) {
@@ -258,8 +275,8 @@ public class UserService {
 		List<BoundStatement> boundStatements = getUpdateUserCredentialsBoundStatements(userModelList);
 		if (boundStatements != null) {
 			batchStatement.addAll(boundStatements);
-			session.execute(batchStatement);
 		}
+		session.execute(batchStatement);
 
 		return userModelList;
 	}
@@ -283,8 +300,8 @@ public class UserService {
 		List<BoundStatement> boundStatements = getDeleteUsersBoundStatements(userModelList);
 		if (boundStatements != null) {
 			batchStatement.addAll(boundStatements);
-			session.execute(batchStatement);
 		}
+		session.execute(batchStatement);
 
 		return userModelList;
 	}
@@ -304,8 +321,8 @@ public class UserService {
 		// Create the PreparedStatement if it does not exist.
 		if (PS_CREATE_USER == null) {
 			PS_CREATE_USER = session.prepare(
-				"INSERT INTO users (user_id, username, password, first_name, last_name, email_address, create_user, create_date, update_user, update_date) " +
-				"VALUES (:userId, :username, :password, :firstName, :lastName, :emailAddress, :createUser, :createDate, :updateUser, :updateDate)");
+				"INSERT INTO users (user_id, username, password, authorization_level, first_name, last_name, email_address, create_user, create_date, update_user, update_date) " +
+				"VALUES (:userId, :username, :password, :authorizationLevel, :firstName, :lastName, :emailAddress, :createUser, :createDate, :updateUser, :updateDate)");
 		}
 
 		if (userModelList != null) {
@@ -316,6 +333,7 @@ public class UserService {
 				updateBoundStatement(boundStatement, userModel);
 				boundStatement.setString("username", userModel.getUsername());
 				boundStatement.setString("password", userModel.getPassword());
+				boundStatement.setString("authorizationLevel", userModel.getAuthorizationLevel().toString());
 				boundStatement.setUUID("createUser", userModel.getCreateUser());
 				boundStatement.setTimestamp("createDate", userModel.getCreateDate());
 				boundStatements.add(boundStatement);
@@ -370,6 +388,7 @@ public class UserService {
 				"UPDATE users SET " +
 				"username = :username, " +
 				"password = :password, " +
+				"authorization_level = :authorizationLevel, " +
 				"update_user = :updateUser, " +
 				"update_date = :updateDate " +
 				"WHERE user_id = :userId");
@@ -383,6 +402,7 @@ public class UserService {
 				boundStatement.setUUID("userId", userModel.getUserId());
 				boundStatement.setString("username", userModel.getUsername());
 				boundStatement.setString("password", userModel.getPassword());
+				boundStatement.setString("authorizationLevel", userModel.getAuthorizationLevel().toString());
 				boundStatement.setUUID("updateUser", userModel.getUpdateUser());
 				boundStatement.setTimestamp("updateDate", userModel.getUpdateDate());
 				boundStatements.add(boundStatement);

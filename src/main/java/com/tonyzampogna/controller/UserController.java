@@ -10,6 +10,15 @@ import java.util.List;
 import java.util.UUID;
 
 
+/**
+ * Handle requests from HTTP.
+ *
+ * The controller:
+ * 	- Checks to see if the user has permissions to perform the operation.
+ * 	- Validates the input to make sure it's clean.
+ * 	- Any other business logic.
+ * 	- Sends appropriate error messages back, if necessary.
+ */
 @RestController
 public class UserController extends BaseController {
 	private static final Logger log = LoggerFactory.getLogger(UserController.class);
@@ -20,10 +29,7 @@ public class UserController extends BaseController {
 	/////////////////////////////////////////////////
 
 	/**
-	 * Create a new user.
-	 *
-	 * It is possible to update or delete a list by ID as well
-	 * using the action parameter.
+	 * Create Users (Update, Delete as well)
 	 */
 	@RequestMapping(
 			value = "/users",
@@ -49,7 +55,7 @@ public class UserController extends BaseController {
 	}
 
 	/**
-	 * Get user by user ID or by username.
+	 * Get Users (by user ID or by username)
 	 */
 	@RequestMapping(
 			value = "/user/{userIdOrUsername}",
@@ -63,10 +69,7 @@ public class UserController extends BaseController {
 	}
 
 	/**
-	 * Update user by ID
-	 *
-	 * Note: This update will not update the username/password.
-	 * Use updateUserCredentials to do that.
+	 * Update Users (not username/password, though)
 	 */
 	@RequestMapping(
 			value = "/users",
@@ -81,7 +84,7 @@ public class UserController extends BaseController {
 	}
 
 	/**
-	 * Update user credentials (for example, username and password)
+	 * Update User Credentials (for example, username and password)
 	 */
 	@RequestMapping(
 			value = "/users/credentials",
@@ -96,7 +99,7 @@ public class UserController extends BaseController {
 	}
 
 	/**
-	 * Delete user by ID
+	 * Delete Users
 	 */
 	@RequestMapping(
 			value = "/users",
