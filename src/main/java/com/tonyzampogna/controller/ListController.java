@@ -2,10 +2,8 @@ package com.tonyzampogna.controller;
 
 import com.tonyzampogna.domain.ListModel;
 import com.tonyzampogna.domain.UserModel;
-import com.tonyzampogna.services.ListService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
@@ -17,19 +15,13 @@ import java.util.UUID;
 public class ListController extends BaseController {
 	private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
-	@Autowired
-	private ListService listService;
-
 
 	/////////////////////////////////////////////////
 	// Controller Methods
 	/////////////////////////////////////////////////
 
 	/**
-	 * Create a new list.
-	 *
-	 * It is possible to update or delete a list by ID as well
-	 * using the action parameter.
+	 * Create Lists (Update, Delete as well)
 	 */
 	@RequestMapping(
 			value = "/lists",
@@ -39,23 +31,23 @@ public class ListController extends BaseController {
 	public List<ListModel> createLists(
 			@RequestParam(name = "userId") String createUserId,
 			@RequestParam(name = "action", required = false) String action,
-			@RequestBody List<ListModel> listModelList) {
+			@RequestBody List<ListModel> listModels) {
 
 		if ("UPDATE".equals(action)) {
-			listModelList = handleUpdateListsRequest(createUserId, listModelList);
+			listModels = handleUpdateListsRequest(createUserId, listModels);
 		}
 		else if ("DELETE".equals(action)) {
-			listModelList = handleDeleteListsRequest(createUserId, listModelList);
+			listModels = handleDeleteListsRequest(createUserId, listModels);
 		}
 		else {
-			listModelList = handleCreateListsRequest(createUserId, listModelList);
+			listModels = handleCreateListsRequest(createUserId, listModels);
 		}
 
-		return listModelList;
+		return listModels;
 	}
 
 	/**
-	 * Create a new lists for a user.
+	 * Create Lists (Update, Delete as well)
 	 */
 	@RequestMapping(
 			value = "/user/{userIdOrUsername}/lists",
@@ -65,13 +57,24 @@ public class ListController extends BaseController {
 	public List<ListModel> createListsForUser(
 			@RequestParam(name = "userId") String createUserId,
 			@PathVariable(name = "userIdOrUsername") String userIdOrUsername,
-			@RequestBody List<ListModel> listModelList) {
+			@RequestParam(name = "action", required = false) String action,
+			@RequestBody List<ListModel> listModels) {
 
-		return handleCreateListsForUserRequest(createUserId, userIdOrUsername, listModelList);
+		if ("UPDATE".equals(action)) {
+			listModels = handleUpdateListsForUserRequest(createUserId, userIdOrUsername, listModels);
+		}
+		else if ("DELETE".equals(action)) {
+			listModels = handleDeleteListsForUserRequest(createUserId, userIdOrUsername, listModels);
+		}
+		else {
+			listModels = handleCreateListsForUserRequest(createUserId, userIdOrUsername, listModels);
+		}
+
+		return listModels;
 	}
 
 	/**
-	 * Get list by list ID.
+	 * Get List (by list ID).
 	 */
 	@RequestMapping(
 			value = "/list/{listId}",
@@ -85,7 +88,7 @@ public class ListController extends BaseController {
 	}
 
 	/**
-	 * Get lists by user ID or by username.
+	 * Get Lists (by user ID or by username).
 	 */
 	@RequestMapping(
 			value = "/user/{userIdOrUsername}/lists",
@@ -99,7 +102,7 @@ public class ListController extends BaseController {
 	}
 
 	/**
-	 * Update list by ID
+	 * Update Lists
 	 */
 	@RequestMapping(
 			value = "/lists",
@@ -108,13 +111,29 @@ public class ListController extends BaseController {
 			produces = "application/json")
 	public List<ListModel> updateLists(
 			@RequestParam(name = "userId") String updateUserId,
-			@RequestBody List<ListModel> listModelList) {
+			@RequestBody List<ListModel> listModels) {
 
-		return handleUpdateListsRequest(updateUserId, listModelList);
+		return handleUpdateListsRequest(updateUserId, listModels);
 	}
 
 	/**
-	 * Delete list by ID
+	 * Update Lists
+	 */
+	@RequestMapping(
+			value = "/user/{userIdOrUsername}/lists",
+			method = RequestMethod.PUT,
+			consumes = "application/json",
+			produces = "application/json")
+	public List<ListModel> updateListsForUser(
+			@RequestParam(name = "userId") String updateUserId,
+			@PathVariable(name = "userIdOrUsername") String userIdOrUsername,
+			@RequestBody List<ListModel> listModels) {
+
+		return handleUpdateListsForUserRequest(updateUserId, userIdOrUsername, listModels);
+	}
+
+	/**
+	 * Delete Lists
 	 */
 	@RequestMapping(
 			value = "/lists",
@@ -123,9 +142,25 @@ public class ListController extends BaseController {
 			produces = "application/json")
 	public List<ListModel> deleteLists(
 			@RequestParam(name = "userId") String deleteUserId,
-			@RequestBody List<ListModel> listModelList) {
+			@RequestBody List<ListModel> listModels) {
 
-		return handleDeleteListsRequest(deleteUserId, listModelList);
+		return handleDeleteListsRequest(deleteUserId, listModels);
+	}
+
+	/**
+	 * Delete Lists
+	 */
+	@RequestMapping(
+			value = "/user/{userIdOrUsername}/lists",
+			method = RequestMethod.DELETE,
+			consumes = "application/json",
+			produces = "application/json")
+	public List<ListModel> deleteListsForUser(
+			@RequestParam(name = "userId") String deleteUserId,
+			@PathVariable(name = "userIdOrUsername") String userIdOrUsername,
+			@RequestBody List<ListModel> listModels) {
+
+		return handleDeleteListsForUserRequest(deleteUserId, userIdOrUsername, listModels);
 	}
 
 
@@ -133,25 +168,12 @@ public class ListController extends BaseController {
 	// Helper Methods
 	/////////////////////////////////////////////////
 
-	private List<ListModel> handleCreateListsRequest(String createUserId, List<ListModel> listModelList) {
-		log.info("A request has come in to create a list. Request User ID: " + createUserId);
-
-		// Set the create and update fields.
-		for (ListModel listModel : listModelList) {
-			listModel.setCreateUser(UUID.fromString(createUserId));
-			listModel.setCreateDate(new Date());
-			listModel.setUpdateUser(UUID.fromString(createUserId));
-			listModel.setUpdateDate(new Date());
-		}
-
-		// Service call
-		listModelList = listService.createLists(listModelList);
-
-		return listModelList;
+	private List<ListModel> handleCreateListsRequest(String createUserId, List<ListModel> listModels) {
+		return handleCreateListsForUserRequest(createUserId, createUserId, listModels);
 	}
 
-	private List<ListModel> handleCreateListsForUserRequest(String createUserId, String userIdOrUsername, List<ListModel> listModelList) {
-		log.info("A request has come in to create a list for a user. Request User ID: " + createUserId + ". For User: " + userIdOrUsername);
+	private List<ListModel> handleCreateListsForUserRequest(String createUserId, String userIdOrUsername, List<ListModel> listModels) {
+		log.info("A request has come in to create lists for a user. Request User ID: " + createUserId + ". For User: " + userIdOrUsername);
 
 		UserModel userModel = getUserModel(userIdOrUsername);
 		if (userModel == null) {
@@ -159,7 +181,7 @@ public class ListController extends BaseController {
 		}
 
 		// Set the create and update fields.
-		for (ListModel listModel : listModelList) {
+		for (ListModel listModel : listModels) {
 			listModel.setCreateUser(UUID.fromString(createUserId));
 			listModel.setCreateDate(new Date());
 			listModel.setUpdateUser(UUID.fromString(createUserId));
@@ -167,9 +189,9 @@ public class ListController extends BaseController {
 		}
 
 		// Service call
-		listModelList = listService.createListsForUser(userModel, listModelList);
+		listModels = listService.createLists(userModel, listModels);
 
-		return listModelList;
+		return listModels;
 	}
 
 	private ListModel handleGetListRequest(String readUserId, String listId) {
@@ -179,41 +201,64 @@ public class ListController extends BaseController {
 	}
 
 	private List<ListModel> handleGetListsForUserRequest(String readUserId, String userIdOrUsername) {
-		List<ListModel> listModelList = null;
+		List<ListModel> listModels = null;
 
 		log.info("A request has come in to read lists for a user. Request User ID: " + readUserId + ". For User: " + userIdOrUsername);
 
+		UUID userId = null;
 		if (isUUID(userIdOrUsername)) {
-			listModelList = listService.getListsByUserId(UUID.fromString(userIdOrUsername));
+			userId = UUID.fromString(userIdOrUsername);
 		}
 		else {
-			listModelList = listService.getListsByUsername(userIdOrUsername);
+			UserModel userModel = userService.getUserByUsername(userIdOrUsername);
+			userId = userModel.getUserId();
 		}
 
-		return listModelList;
+		listModels = listService.getLists(userId);
+
+		return listModels;
 	}
 
-	private List<ListModel> handleUpdateListsRequest(String updateUserId, List<ListModel> listModelList) {
-		log.info("A request has come in to update a list. Request User ID: " + updateUserId);
+	private List<ListModel> handleUpdateListsRequest(String updateUserId, List<ListModel> listModels) {
+		return handleUpdateListsForUserRequest(updateUserId, updateUserId, listModels);
+	}
 
-		// Set the update fields.
-		for (ListModel listModel : listModelList) {
+	private List<ListModel> handleUpdateListsForUserRequest(String updateUserId, String userIdOrUsername, List<ListModel> listModels) {
+		log.info("A request has come in to update lists for a user. Request User ID: " + updateUserId + ". For User: " + userIdOrUsername);
+
+		UserModel userModel = getUserModel(userIdOrUsername);
+		if (userModel == null) {
+			return null;
+		}
+
+		// Set the create and update fields.
+		for (ListModel listModel : listModels) {
 			listModel.setUpdateUser(UUID.fromString(updateUserId));
 			listModel.setUpdateDate(new Date());
 		}
 
 		// Service call
-		listModelList = listService.updateLists(listModelList);
+		listModels = listService.updateLists(userModel, listModels);
 
-		return listModelList;
+		return listModels;
 	}
 
-	private List<ListModel> handleDeleteListsRequest(String deleteUserId, List<ListModel> listModelList) {
-		log.info("A request has come in to delete a list. Request User ID: " + deleteUserId);
+	private List<ListModel> handleDeleteListsRequest(String deleteUserId, List<ListModel> listModels) {
+		return handleDeleteListsForUserRequest(deleteUserId, deleteUserId, listModels);
+	}
+
+	private List<ListModel> handleDeleteListsForUserRequest(String deleteUserId, String userIdOrUsername, List<ListModel> listModels) {
+		log.info("A request has come in to delete lists for a user. Request User ID: " + deleteUserId + ". For User: " + userIdOrUsername);
+
+		UserModel userModel = getUserModel(userIdOrUsername);
+		if (userModel == null) {
+			return null;
+		}
 
 		// Service call
-		listModelList = listService.deleteLists(listModelList);
+		listModels = listService.deleteLists(userModel, listModels);
 
-		return listModelList;
+		return listModels;
 	}
+
 }

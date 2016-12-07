@@ -1,6 +1,6 @@
 package com.tonyzampogna.domain;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -13,13 +13,14 @@ import java.util.UUID;
 public class ListModel {
 	private UUID listId = null;
 	private String listName = null;
+	private UserListModel.AuthorizationLevel authorizationLevel = null;
 	private UUID createUser = null;
 	private Date createDate = null;
 	private UUID updateUser = null;
 	private Date updateDate = null;
 	private List<UUID> itemSortOrder = null;
 
-	@JsonProperty("items")
+	@JsonIgnore()
 	private List<ItemModel> itemModels = new ArrayList<ItemModel>();
 
 
@@ -37,6 +38,14 @@ public class ListModel {
 
 	public void setListName(String listName) {
 		this.listName = listName;
+	}
+
+	public UserListModel.AuthorizationLevel getAuthorizationLevel() {
+		return authorizationLevel;
+	}
+
+	public void setAuthorizationLevel(UserListModel.AuthorizationLevel authorizationLevel) {
+		this.authorizationLevel = authorizationLevel;
 	}
 
 	public UUID getCreateUser() {

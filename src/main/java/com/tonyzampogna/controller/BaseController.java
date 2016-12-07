@@ -20,13 +20,13 @@ public abstract class BaseController {
 	private static final Logger log = LoggerFactory.getLogger(BaseController.class);
 
 	@Autowired
-	private UserService userService;
+	protected UserService userService;
 
 	@Autowired
-	private ListService listService;
+	protected ListService listService;
 
 	@Autowired
-	private ItemService itemService;
+	protected ItemService itemService;
 
 
 	/////////////////////////////////////////////////

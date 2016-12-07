@@ -1,10 +1,8 @@
 package com.tonyzampogna.controller;
 
 import com.tonyzampogna.domain.UserModel;
-import com.tonyzampogna.services.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
@@ -15,9 +13,6 @@ import java.util.UUID;
 @RestController
 public class UserController extends BaseController {
 	private static final Logger log = LoggerFactory.getLogger(UserController.class);
-
-	@Autowired
-	private UserService userService;
 
 
 	/////////////////////////////////////////////////
@@ -35,7 +30,7 @@ public class UserController extends BaseController {
 			method = RequestMethod.POST,
 			consumes = "application/json",
 			produces = "application/json")
-	public List<UserModel> createUser(
+	public List<UserModel> createUsers(
 			@RequestParam(name = "userId") String createUserId,
 			@RequestParam(name = "action", required = false) String action,
 			@RequestBody List<UserModel> userModelList) {
@@ -78,7 +73,7 @@ public class UserController extends BaseController {
 			method = RequestMethod.PUT,
 			consumes = "application/json",
 			produces = "application/json")
-	public List<UserModel> updateUser(
+	public List<UserModel> updateUsers(
 			@RequestParam(name = "userId") String updateUserId,
 			@RequestBody List<UserModel> userModelList) {
 
