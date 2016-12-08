@@ -242,9 +242,9 @@ public class ListController extends BaseController {
 		log.info("A request has come in to update lists for a user. Request User ID: " + updateUserId + ". For User: " + userIdOrUsername);
 
 		UserModel userModel = getUserModel(userIdOrUsername);
-		if (userModel == null) {
-			return null;
-		}
+
+		// Validate the permission for the user.
+		validateUpdateListPermissions(updateUserId, userModel);
 
 		// Set the create and update fields.
 		for (ListModel listModel : listModels) {
@@ -266,9 +266,9 @@ public class ListController extends BaseController {
 		log.info("A request has come in to delete lists for a user. Request User ID: " + deleteUserId + ". For User: " + userIdOrUsername);
 
 		UserModel userModel = getUserModel(userIdOrUsername);
-		if (userModel == null) {
-			return null;
-		}
+
+		// Validate the permission for the user.
+		validateDeleteListPermissions(deleteUserId, userModel);
 
 		// Service call
 		listModels = listService.deleteLists(userModel, listModels);
