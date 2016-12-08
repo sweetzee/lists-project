@@ -174,7 +174,7 @@ public class ListController extends BaseController {
 
 
 	/////////////////////////////////////////////////
-	// Helper Methods
+	// Handler Methods
 	/////////////////////////////////////////////////
 
 	private List<ListModel> handleCreateListsRequest(String createUserId, List<ListModel> listModels) {
@@ -184,10 +184,11 @@ public class ListController extends BaseController {
 	private List<ListModel> handleCreateListsForUserRequest(String createUserId, String userIdOrUsername, List<ListModel> listModels) {
 		log.info("A request has come in to create lists for a user. Request User ID: " + createUserId + ". For User: " + userIdOrUsername);
 
-		UserModel userModel = getUserModel(userIdOrUsername);
-		if (userModel == null) {
-			return null;
-		}
+		// Get the UserModel for the user attached to the list.
+		UserModel listUserModel = getUserModel(userIdOrUsername);
+
+		// Validate the permission for the user.
+		validateCreateListPermissions(createUserId, listUserModel);
 
 		// Set the create and update fields.
 		for (ListModel listModel : listModels) {
@@ -198,13 +199,18 @@ public class ListController extends BaseController {
 		}
 
 		// Service call
-		listModels = listService.createLists(userModel, listModels);
+		listModels = listService.createLists(listUserModel, listModels);
 
 		return listModels;
 	}
 
 	private ListModel handleGetListRequest(String readUserId, String listId) {
 		log.info("A request has come in to read a list. Request User ID: " + readUserId);
+
+		UserModel userModel = getUserModel(readUserId);
+
+		// Validate the permission for the user.
+		validateReadListPermissions(readUserId, userModel);
 
 		return getListModel(listId);
 	}
@@ -270,4 +276,120 @@ public class ListController extends BaseController {
 		return listModels;
 	}
 
+
+	/////////////////////////////////////////////////
+	// Permission Validation Methods
+	/////////////////////////////////////////////////
+
+	private void validateCreateListPermissions(String requestUserId, UserModel listUserModel) {
+		boolean canCreateList = false;
+
+		UserModel requestUserModel = getUserModel(requestUserId);
+		if (requestUserModel == null) {
+			throw new RuntimeException("The user requesting the operation does not exist. Request User ID: " + requestUserId);
+		}
+
+		if (listUserModel == null) {
+			throw new RuntimeException("There is not a user set for the list. Request User ID: " + requestUserId);
+		}
+
+		// Admins can create lists.
+		if (UserModel.AuthorizationLevel.ADMIN.equals(requestUserModel.getAuthorizationLevel())) {
+			canCreateList = true;
+		}
+
+		// Users can create lists with the same user ID.
+		if (requestUserModel.getUserId() != null &&
+			requestUserModel.getUserId().equals(listUserModel.getUserId())) {
+			canCreateList = true;
+		}
+
+		if (!canCreateList) {
+			throw new RuntimeException("The requesting user cannot create the list. Request User ID: " + requestUserId + ". List User ID: " + listUserModel.getUserId());
+		}
+	}
+
+	private void validateReadListPermissions(String requestUserId, UserModel listUserModel) {
+		boolean canReadList = false;
+
+		UserModel requestUserModel = getUserModel(requestUserId);
+		if (requestUserModel == null) {
+			throw new RuntimeException("The user requesting the operation does not exist. Request User ID: " + requestUserId);
+		}
+
+		if (listUserModel == null) {
+			throw new RuntimeException("There is not a user set for the list. Request User ID: " + requestUserId);
+		}
+
+		// Admins can create lists.
+		if (UserModel.AuthorizationLevel.ADMIN.equals(requestUserModel.getAuthorizationLevel())) {
+			canReadList = true;
+		}
+
+		// Users can create lists with the same user ID.
+		if (requestUserModel.getUserId() != null &&
+			requestUserModel.getUserId().equals(listUserModel.getUserId())) {
+			canReadList = true;
+		}
+
+		if (!canReadList) {
+			throw new RuntimeException("The requesting user cannot read the list. Request User ID: " + requestUserId + ". List User ID: " + listUserModel.getUserId());
+		}
+	}
+
+	private void validateUpdateListPermissions(String requestUserId, UserModel listUserModel) {
+		boolean canUpdateList = false;
+
+		UserModel requestUserModel = getUserModel(requestUserId);
+		if (requestUserModel == null) {
+			throw new RuntimeException("The user requesting the operation does not exist. Request User ID: " + requestUserId);
+		}
+
+		if (listUserModel == null) {
+			throw new RuntimeException("There is not a user set for the list. Request User ID: " + requestUserId);
+		}
+
+		// Admins can create lists.
+		if (UserModel.AuthorizationLevel.ADMIN.equals(requestUserModel.getAuthorizationLevel())) {
+			canUpdateList = true;
+		}
+
+		// Users can create lists with the same user ID.
+		if (requestUserModel.getUserId() != null &&
+			requestUserModel.getUserId().equals(listUserModel.getUserId())) {
+			canUpdateList = true;
+		}
+
+		if (!canUpdateList) {
+			throw new RuntimeException("The requesting user cannot create the list. Request User ID: " + requestUserId + ". List User ID: " + listUserModel.getUserId());
+		}
+	}
+
+	private void validateDeleteListPermissions(String requestUserId, UserModel listUserModel) {
+		boolean canDeleteList = false;
+
+		UserModel requestUserModel = getUserModel(requestUserId);
+		if (requestUserModel == null) {
+			throw new RuntimeException("The user requesting the operation does not exist. Request User ID: " + requestUserId);
+		}
+
+		if (listUserModel == null) {
+			throw new RuntimeException("There is not a user set for the list. Request User ID: " + requestUserId);
+		}
+
+		// Admins can create lists.
+		if (UserModel.AuthorizationLevel.ADMIN.equals(requestUserModel.getAuthorizationLevel())) {
+			canDeleteList = true;
+		}
+
+		// Users can create lists with the same user ID.
+		if (requestUserModel.getUserId() != null &&
+			requestUserModel.getUserId().equals(listUserModel.getUserId())) {
+			canDeleteList = true;
+		}
+
+		if (!canDeleteList) {
+			throw new RuntimeException("The requesting user cannot create the list. Request User ID: " + requestUserId + ". List User ID: " + listUserModel.getUserId());
+		}
+	}
 }
